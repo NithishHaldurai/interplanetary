@@ -210,6 +210,92 @@
             color: #999;
             text-transform: uppercase;
         }
+
+        /* Surface Environment Animations */
+        @keyframes float-clouds {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(calc(100vw + 100px)); }
+        }
+
+        @keyframes drift {
+            0% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-20px) translateX(10px); }
+            100% { transform: translateY(0px) translateX(20px); }
+        }
+
+        @keyframes snow-fall {
+            0% { transform: translateY(-10px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        @keyframes lava-glow {
+            0% { box-shadow: 0 0 20px #ff4400; }
+            100% { box-shadow: 0 0 40px #ff6600, 0 0 60px #ff4400; }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.6; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        @keyframes dimensional-spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes float-ship {
+            0% { transform: translateX(-50%) translateY(0px); }
+            100% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        @keyframes energy-drift {
+            0% { transform: translateY(0px) translateX(0px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-50px) translateX(20px); opacity: 0; }
+        }
+
+        @keyframes vortex-spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); }
+        }
+
+        @keyframes spaghetti {
+            0% { 
+                transform: translateX(-50%) scaleY(1) scaleX(1); 
+                opacity: 1; 
+            }
+            50% { 
+                transform: translateX(-50%) scaleY(2) scaleX(0.5); 
+                opacity: 0.8; 
+            }
+            100% { 
+                transform: translateX(-50%) scaleY(5) scaleX(0.1); 
+                opacity: 0; 
+            }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes aurora-dance {
+            0% { opacity: 0.6; transform: scaleY(1) translateY(0px); }
+            100% { opacity: 1; transform: scaleY(1.2) translateY(-10px); }
+        }
+
+        @keyframes slow-drift {
+            0% { transform: translateX(0px) translateY(0px); }
+            100% { transform: translateX(50px) translateY(-20px); }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
     </style>
 </head>
 <body>
@@ -236,6 +322,14 @@
         <div class="hud-item">
             <div class="hud-label">VIEW MODE</div>
             <div id="hud-view" class="hud-value">Map View</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">FUEL</div>
+            <div id="hud-fuel" class="hud-value">1000</div>
+        </div>
+        <div class="hud-item">
+            <div class="hud-label">SCORE</div>
+            <div id="hud-score" class="hud-value">0</div>
         </div>
     </div>
     <div id="map-area">
@@ -292,6 +386,17 @@
         landerThrust: 0.015, // Thrust power
         landerFuel: 100, // Fuel percentage
         thrusting: false, // Visual flag for drawing fire
+        
+        // NEW FEATURES
+        particles: [], // Particle system for effects
+        shipFuel: 1000, // Main ship fuel
+        discoveries: [], // Found items/locations
+        achievements: [], // Unlocked achievements
+        missionObjectives: [], // Current missions
+        thrustTrail: [], // Ship exhaust trail
+        time: 0, // Game time for animations
+        score: 0, // Player score
+        weatherEvents: [], // Dynamic weather/hazards
     };
 
     // Black Hole Data
@@ -319,6 +424,8 @@
     const $hudVelocity = document.getElementById('hud-velocity');
     const $hudOrientation = document.getElementById('hud-orientation');
     const $hudView = document.getElementById('hud-view');
+    const $hudFuel = document.getElementById('hud-fuel');
+    const $hudScore = document.getElementById('hud-score');
     
     // Keyboard Input State
     const keys = { W: false, A: false, S: false, D: false, L: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
@@ -439,32 +546,941 @@
             activity: 'Execute jump sequence.',
             gravity: 0,
             color: '#FFFFFF'
+        },
+        
+        // New Moon Scenarios
+        'Phobos': {
+            theme: 'bg-gradient-to-br from-gray-800 to-red-900',
+            title: 'Martian Moon - Phobos',
+            text: "Landing on this tiny, potato-shaped moon with almost no gravity. The red dust of Mars looms large in the sky above.",
+            activity: 'Study rapid orbital decay and collect surface samples.',
+            gravity: 0.001,
+            color: '#8B4513'
+        },
+        'Deimos': {
+            theme: 'bg-gradient-to-br from-gray-700 to-brown-800',
+            title: 'Distant Martian Moon - Deimos',
+            text: "This small, dark moon feels like a captured asteroid. Mars appears as a distant red dot from here.",
+            activity: 'Investigate origin and composition of this mysterious moon.',
+            gravity: 0.0003,
+            color: '#654321'
+        },
+        'Europa': {
+            theme: 'bg-gradient-to-br from-blue-200 to-gray-300',
+            title: 'Europa - Ocean Moon',
+            text: "Standing on a vast ice sheet with an ocean beneath. Jupiter's massive presence dominates the sky with radiation auroras.",
+            activity: 'Deploy ice-penetrating probes to search for subsurface life.',
+            gravity: 0.134,
+            color: '#E0E0E0'
+        },
+        'Titan': {
+            theme: 'bg-gradient-to-br from-orange-600 to-brown-700',
+            title: 'Titan - Methane World',
+            text: "A thick orange atmosphere surrounds this moon. Methane rivers and lakes stretch to the horizon under Saturn's rings.",
+            activity: 'Analyze hydrocarbon chemistry and atmospheric composition.',
+            gravity: 0.14,
+            color: '#FFA500'
+        },
+        
+        // New Weird System Planets
+        'Crystal Moon': {
+            theme: 'bg-gradient-to-br from-cyan-200 to-green-300',
+            title: 'Crystal Moon - Satellite Paradise',
+            text: "Crystalline formations everywhere catch and split the light from the Diamond Star into rainbow prismatic displays.",
+            activity: 'Harvest rare crystal formations and study their properties.',
+            gravity: 0.2,
+            color: '#99FFCC'
+        },
+        'Plasma World': {
+            theme: 'bg-gradient-to-br from-purple-800 to-pink-600',
+            title: 'Plasma World - Energy Storms',
+            text: "Lightning crackles constantly across the surface. The air itself glows with ionized particles and electromagnetic energy.",
+            activity: 'Study plasma physics and harvest electromagnetic energy.',
+            gravity: 0.8,
+            color: '#FF00FF'
+        },
+        'Void Planet': {
+            theme: 'bg-gradient-to-br from-black to-gray-900',
+            title: 'Void Planet - The Darkness',
+            text: "An utterly black world that seems to absorb all light. Only your ship's lights illuminate the strange, smooth surface.",
+            activity: 'Investigate dark matter concentrations and gravitational anomalies.',
+            gravity: 1.5,
+            color: '#1a1a1a'
+        },
+        'Rainbow World': {
+            theme: 'bg-gradient-to-br from-pink-400 to-purple-500',
+            title: 'Rainbow World - Prismatic Paradise',
+            text: "Every surface shimmers with rainbow colors. The atmosphere itself bends light into spectacular aurora-like displays.",
+            activity: 'Study exotic atmospheric particles and collect rainbow minerals.',
+            gravity: 0.6,
+            color: '#FF69B4'
+        },
+        'Storm Giant': {
+            theme: 'bg-gradient-to-br from-purple-700 to-blue-900',
+            title: 'Storm Giant - Floating City',
+            text: "You've landed on a massive floating platform in the endless storm clouds. Lightning illuminates the turbulent atmosphere.",
+            activity: 'Navigate storm systems and study atmospheric dynamics.',
+            gravity: 2.8,
+            color: '#9966CC'
+        },
+        
+        // Updated scenarios for previously impossible planets
+        'The Sun': {
+            theme: 'bg-gradient-to-br from-yellow-300 to-orange-600',
+            title: 'Solar Corona Station',
+            text: "Somehow, your heat shields held! You've landed on a magnetic containment platform in the sun's corona. Plasma dances around you.",
+            activity: 'Collect solar plasma samples and study stellar magnetic fields.',
+            gravity: 28,
+            color: '#FFD700'
+        },
+        'Jupiter Orbit': {
+            theme: 'bg-gradient-to-br from-orange-400 to-red-700',
+            title: 'Jovian Cloud City',
+            text: "You've found a floating platform in Jupiter's upper atmosphere. The Great Red Spot swirls majestically in the distance.",
+            activity: 'Study atmospheric composition and harvest helium-3.',
+            gravity: 2.36,
+            color: '#FF9800'
+        },
+        'Saturn Orbit': {
+            theme: 'bg-gradient-to-br from-yellow-200 to-gold-400',
+            title: 'Saturnian Ring Station',
+            text: "You've landed on a mining platform within Saturn's rings. Ice particles and rock fragments drift past your viewports.",
+            activity: 'Mine ring materials and study planetary formation.',
+            gravity: 0.916,
+            color: '#FFEB3B'
         }
     };
 
+    // --- SOUND SYSTEM ---
+    
+    class SoundManager {
+        constructor() {
+            this.audioContext = null;
+            this.sounds = {};
+            this.masterVolume = 0.3;
+            this.init();
+        }
+        
+        init() {
+            try {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.createSounds();
+            } catch(e) {
+                console.warn('Web Audio API not supported');
+            }
+        }
+        
+        createSounds() {
+            // Create thrust sound (low frequency oscillator)
+            this.sounds.thrust = () => {
+                if (!this.audioContext) return;
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(120, this.audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(this.masterVolume * 0.3, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.15);
+                
+                oscillator.type = 'sawtooth';
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.15);
+            };
+            
+            // Landing sound (higher pitch beep)
+            this.sounds.landing = () => {
+                if (!this.audioContext) return;
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(400, this.audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(this.masterVolume * 0.5, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.3);
+                
+                oscillator.type = 'sine';
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.3);
+            };
+            
+            // Achievement sound (success chime)
+            this.sounds.achievement = () => {
+                if (!this.audioContext) return;
+                const frequencies = [523, 659, 784]; // C, E, G notes
+                
+                frequencies.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(this.audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(this.masterVolume * 0.4, this.audioContext.currentTime + 0.01);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.4);
+                        
+                        oscillator.type = 'sine';
+                        oscillator.start();
+                        oscillator.stop(this.audioContext.currentTime + 0.4);
+                    }, i * 100);
+                });
+            };
+        }
+        
+        play(soundName) {
+            if (this.sounds[soundName]) {
+                this.sounds[soundName]();
+            }
+        }
+        
+        setVolume(volume) {
+            this.masterVolume = Math.max(0, Math.min(1, volume));
+        }
+    }
+    
+    const soundManager = new SoundManager();
+
+    // --- PARTICLE SYSTEM AND VISUAL EFFECTS ---
+    
+    class Particle {
+        constructor(x, y, vx, vy, color, life, size = 2) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.color = color;
+            this.life = life;
+            this.maxLife = life;
+            this.size = size;
+            this.gravity = 0;
+        }
+        
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vy += this.gravity;
+            this.life--;
+            this.vx *= 0.98; // Air resistance
+            this.vy *= 0.98;
+        }
+        
+        draw(ctx) {
+            const alpha = this.life / this.maxLife;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+        
+        isDead() {
+            return this.life <= 0;
+        }
+    }
+    
+    function createThrustParticles() {
+        if (gameState.view !== 'map') return;
+        
+        const shipX = $solarMap.width / 2;
+        const shipY = $solarMap.height / 2;
+        
+        // Create particles behind the ship
+        const angle = gameState.shipAngle + Math.PI; // Opposite direction
+        const spread = 0.3;
+        
+        for (let i = 0; i < 3; i++) {
+            const particleAngle = angle + (Math.random() - 0.5) * spread;
+            const speed = Math.random() * 2 + 1;
+            const vx = Math.cos(particleAngle) * speed;
+            const vy = Math.sin(particleAngle) * speed;
+            
+            const colors = ['#00ffc7', '#00ccaa', '#0099ff', '#ffffff'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            gameState.particles.push(new Particle(
+                shipX + Math.cos(angle) * 15,
+                shipY + Math.sin(angle) * 15,
+                vx, vy, color, 30, Math.random() * 3 + 1
+            ));
+        }
+    }
+    
+    function createLandingParticles(x, y) {
+        // Dust cloud on landing
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 3 + 1;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            
+            gameState.particles.push(new Particle(
+                x, y, vx, vy, '#8B4513', 60, Math.random() * 2 + 1
+            ));
+        }
+    }
+    
+    function updateParticles() {
+        for (let i = gameState.particles.length - 1; i >= 0; i--) {
+            const particle = gameState.particles[i];
+            particle.update();
+            
+            if (particle.isDead()) {
+                gameState.particles.splice(i, 1);
+            }
+        }
+    }
+    
+    function drawParticles() {
+        gameState.particles.forEach(particle => {
+            particle.draw(ctx);
+        });
+    }
+    
+    // Achievement System
+    const ACHIEVEMENTS = {
+        'first_landing': { name: 'First Steps', description: 'Successfully land on any planet', points: 100 },
+        'system_jumper': { name: 'Dimensional Traveler', description: 'Travel between star systems', points: 200 },
+        'perfect_landing': { name: 'Ace Pilot', description: 'Land with minimal fuel usage', points: 300 },
+        'explorer': { name: 'Solar Explorer', description: 'Visit all planets in normal system', points: 500 },
+        'fuel_efficient': { name: 'Conservation Expert', description: 'Complete mission with >50% fuel', points: 250 }
+    };
+    
+    function unlockAchievement(achievementId) {
+        if (gameState.achievements.includes(achievementId)) return;
+        
+        gameState.achievements.push(achievementId);
+        const achievement = ACHIEVEMENTS[achievementId];
+        gameState.score += achievement.points;
+        
+        // Show achievement notification
+        showNotification(`🏆 ${achievement.name}`, achievement.description, '#FFD700');
+        soundManager.play('achievement');
+    }
+    
+    function showNotification(title, message, color = '#00ffc7') {
+        // Create temporary notification element
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: ${color};
+            padding: 15px;
+            border: 2px solid ${color};
+            border-radius: 10px;
+            z-index: 1000;
+            font-weight: bold;
+            max-width: 300px;
+            box-shadow: 0 0 20px ${color}50;
+        `;
+        notification.innerHTML = `<div style="font-size: 1.2em; margin-bottom: 5px;">${title}</div><div style="font-size: 0.9em; opacity: 0.8;">${message}</div>`;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        notification.style.transform = 'translateX(100%)';
+        notification.style.transition = 'transform 0.3s ease-out';
+        setTimeout(() => notification.style.transform = 'translateX(0)', 50);
+        
+        // Remove after delay
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => document.body.removeChild(notification), 300);
+        }, 4000);
+    }
+    
+    // Mission System
+    const MISSIONS = {
+        'first_mission': {
+            title: 'Welcome to Space',
+            description: 'Land on any planet to begin your exploration career',
+            objectives: ['Land on any celestial body'],
+            reward: { score: 100, fuel: 200 },
+            completed: false
+        },
+        'lunar_explorer': {
+            title: 'Lunar Survey',
+            description: 'Conduct a detailed survey of Earth\'s moon',
+            objectives: ['Land on The Moon', 'Collect lunar samples'],
+            reward: { score: 200, fuel: 150 },
+            completed: false,
+            requires: ['first_mission']
+        },
+        'red_planet': {
+            title: 'Mars Expedition',
+            description: 'Explore the red planet and search for signs of life',
+            objectives: ['Land on Mars Orbit', 'Analyze surface composition'],
+            reward: { score: 300, fuel: 200 },
+            completed: false,
+            requires: ['lunar_explorer']
+        },
+        'system_explorer': {
+            title: 'Dimensional Pioneer',
+            description: 'Venture into the mysterious alternate dimension',
+            objectives: ['Enter the black hole', 'Land on Diamond Planet'],
+            reward: { score: 500, fuel: 300 },
+            completed: false,
+            requires: ['red_planet']
+        }
+    };
+    
+    function initializeMissions() {
+        // Start with first mission
+        if (gameState.missionObjectives.length === 0) {
+            gameState.missionObjectives.push('first_mission');
+            showNotification('📋 Mission Briefing', MISSIONS['first_mission'].description, '#00ff88');
+        }
+    }
+    
+    function checkMissionProgress(action, location) {
+        gameState.missionObjectives.forEach(missionId => {
+            const mission = MISSIONS[missionId];
+            if (mission && !mission.completed) {
+                let completed = false;
+                
+                // Check mission-specific completion conditions
+                switch(missionId) {
+                    case 'first_mission':
+                        if (action === 'land') completed = true;
+                        break;
+                    case 'lunar_explorer':
+                        if (action === 'land' && location === 'The Moon') completed = true;
+                        break;
+                    case 'red_planet':
+                        if (action === 'land' && location === 'Mars Orbit') completed = true;
+                        break;
+                    case 'system_explorer':
+                        if (action === 'land' && location === 'Diamond Planet') completed = true;
+                        break;
+                }
+                
+                if (completed) {
+                    completeMission(missionId);
+                }
+            }
+        });
+    }
+    
+    function completeMission(missionId) {
+        const mission = MISSIONS[missionId];
+        mission.completed = true;
+        
+        // Award rewards
+        gameState.score += mission.reward.score;
+        gameState.shipFuel += mission.reward.fuel;
+        gameState.shipFuel = Math.min(gameState.shipFuel, 2000); // Cap fuel
+        
+        showNotification('✅ Mission Complete!', `${mission.title} - Earned ${mission.reward.score} points!`, '#00ff00');
+        
+        // Check for next mission unlock
+        Object.keys(MISSIONS).forEach(nextMissionId => {
+            const nextMission = MISSIONS[nextMissionId];
+            if (nextMission.requires && nextMission.requires.includes(missionId) && !gameState.missionObjectives.includes(nextMissionId)) {
+                gameState.missionObjectives.push(nextMissionId);
+                showNotification('🆕 New Mission', nextMission.title, '#ffaa00');
+            }
+        });
+    }
 
     // --- SYSTEM DEFINITIONS ---
 
     const NORMAL_PLANETS = {
-        'The Sun': { type: 'star', radius: 30, parent: null, orbitRadius: 0, orbitSpeed: 0, initialAngle: 0, color: '#FFD700' },
-        'Mercury Orbit': { type: 'planet', radius: 8, parent: 'The Sun', orbitRadius: 70, orbitSpeed: 0.005, initialAngle: 0, color: '#A9A9A9' },
-        'Venus Orbit': { type: 'planet', radius: 13, parent: 'The Sun', orbitRadius: 150, orbitSpeed: 0.004, initialAngle: 90, color: '#FFC107' },
-        'Earth Orbit': { type: 'planet', radius: 15, parent: 'The Sun', orbitRadius: 250, orbitSpeed: 0.003, initialAngle: 180, color: '#4CAF50' },
-        'The Moon': { type: 'planet', radius: 5, parent: 'Earth Orbit', orbitRadius: 30, orbitSpeed: 0.05, initialAngle: 45, color: '#CCCCCC' }, 
-        'Mars Orbit': { type: 'planet', radius: 10, parent: 'The Sun', orbitRadius: 350, orbitSpeed: 0.0025, initialAngle: 270, color: '#FF5722' },
-        'Jupiter Orbit': { type: 'planet', radius: 25, parent: 'The Sun', orbitRadius: 650, orbitSpeed: 0.0015, initialAngle: 0, color: '#FF9800' },
-        'Saturn Orbit': { type: 'planet', radius: 22, parent: 'The Sun', orbitRadius: 850, orbitSpeed: 0.001, initialAngle: 60, color: '#FFEB3B', rings: { inner: 30, outer: 45, color: '#C0C0C0' } },
-        'Uranus Orbit': { type: 'planet', radius: 18, parent: 'The Sun', orbitRadius: 1000, orbitSpeed: 0.0008, initialAngle: 300, color: '#00BCD4' },
-        'Neptune Orbit': { type: 'planet', radius: 17, parent: 'The Sun', orbitRadius: 1150, orbitSpeed: 0.0007, initialAngle: 150, color: '#2196F3' },
+        'The Sun': { 
+            type: 'star', 
+            radius: 30, 
+            parent: null, 
+            orbitRadius: 0, 
+            orbitSpeed: 0, 
+            initialAngle: 0, 
+            color: '#FFD700',
+            landable: false,
+            landingType: 'impossible',
+            surfaceTemp: 5778, // Kelvin
+            atmosphere: 'plasma'
+        },
+        'Mercury Orbit': { 
+            type: 'terrestrial', 
+            radius: 8, 
+            parent: 'The Sun', 
+            orbitRadius: 70, 
+            orbitSpeed: 0.005, 
+            initialAngle: 0, 
+            color: '#A9A9A9',
+            landable: true,
+            landingType: 'normal',
+            gravity: 0.378, // Earth = 1
+            atmosphere: 'none',
+            surfaceTemp: 167, // Average in Celsius
+            pressure: 0,
+            hasMagneticField: true
+        },
+        'Venus Orbit': { 
+            type: 'terrestrial', 
+            radius: 13, 
+            parent: 'The Sun', 
+            orbitRadius: 150, 
+            orbitSpeed: 0.004, 
+            initialAngle: 90, 
+            color: '#FFC107',
+            landable: false,
+            landingType: 'atmospheric_burn',
+            gravity: 0.907,
+            atmosphere: 'thick_toxic', // 96% CO2, sulfuric acid clouds
+            surfaceTemp: 464, // Celsius
+            pressure: 92, // Earth atmospheres
+            hasMagneticField: false
+        },
+        'Earth Orbit': { 
+            type: 'terrestrial', 
+            radius: 15, 
+            parent: 'The Sun', 
+            orbitRadius: 250, 
+            orbitSpeed: 0.003, 
+            initialAngle: 180, 
+            color: '#4CAF50',
+            landable: true,
+            landingType: 'atmospheric_entry',
+            gravity: 1.0,
+            atmosphere: 'breathable', // 78% N2, 21% O2
+            surfaceTemp: 15, // Average Celsius
+            pressure: 1,
+            hasMagneticField: true
+        },
+        'The Moon': { 
+            type: 'satellite', 
+            radius: 5, 
+            parent: 'Earth Orbit', 
+            orbitRadius: 30, 
+            orbitSpeed: 0.05, 
+            initialAngle: 45, 
+            color: '#CCCCCC',
+            landable: true,
+            landingType: 'normal',
+            gravity: 0.166,
+            atmosphere: 'none',
+            surfaceTemp: -20, // Average
+            pressure: 0,
+            hasMagneticField: false
+        },
+        'Phobos': { 
+            type: 'satellite', 
+            radius: 3, 
+            parent: 'Mars Orbit', 
+            orbitRadius: 25, 
+            orbitSpeed: 0.08, 
+            initialAngle: 0, 
+            color: '#8B4513',
+            landable: true,
+            landingType: 'normal',
+            gravity: 0.001,
+            atmosphere: 'none',
+            surfaceTemp: -40,
+            pressure: 0,
+            hasMagneticField: false
+        },
+        'Deimos': { 
+            type: 'satellite', 
+            radius: 2, 
+            parent: 'Mars Orbit', 
+            orbitRadius: 35, 
+            orbitSpeed: 0.06, 
+            initialAngle: 180, 
+            color: '#654321',
+            landable: true,
+            landingType: 'normal',
+            gravity: 0.0003,
+            atmosphere: 'none',
+            surfaceTemp: -40,
+            pressure: 0,
+            hasMagneticField: false
+        },
+        'Europa': { 
+            type: 'satellite', 
+            radius: 6, 
+            parent: 'Jupiter Orbit', 
+            orbitRadius: 40, 
+            orbitSpeed: 0.07, 
+            initialAngle: 90, 
+            color: '#E0E0E0',
+            landable: true,
+            landingType: 'normal',
+            gravity: 0.134,
+            atmosphere: 'thin',
+            surfaceTemp: -160,
+            pressure: 0.0001,
+            hasMagneticField: false
+        },
+        'Titan': { 
+            type: 'satellite', 
+            radius: 7, 
+            parent: 'Saturn Orbit', 
+            orbitRadius: 45, 
+            orbitSpeed: 0.06, 
+            initialAngle: 270, 
+            color: '#FFA500',
+            landable: true,
+            landingType: 'atmospheric_entry',
+            gravity: 0.14,
+            atmosphere: 'thick',
+            surfaceTemp: -179,
+            pressure: 1.5,
+            hasMagneticField: false
+        },
+        
+        // Space Stations
+        'Ceres Station': { 
+            type: 'station', 
+            radius: 4, 
+            parent: 'The Sun', 
+            orbitRadius: 450, 
+            orbitSpeed: 0.002, 
+            initialAngle: 120, 
+            color: '#00FFFF',
+            landable: true,
+            landingType: 'station',
+            gravity: 0.1,
+            atmosphere: 'artificial',
+            surfaceTemp: 20,
+            pressure: 1,
+            hasMagneticField: false
+        },
+        'L4 Station': { 
+            type: 'station', 
+            radius: 3, 
+            parent: 'Earth Orbit', 
+            orbitRadius: 60, 
+            orbitSpeed: 0.003, 
+            initialAngle: 60, 
+            color: '#00FFAA',
+            landable: true,
+            landingType: 'station',
+            gravity: 0,
+            atmosphere: 'artificial',
+            surfaceTemp: 22,
+            pressure: 1,
+            hasMagneticField: false
+        },
+        'Jovian Station': { 
+            type: 'station', 
+            radius: 5, 
+            parent: 'Jupiter Orbit', 
+            orbitRadius: 80, 
+            orbitSpeed: 0.015, 
+            initialAngle: 180, 
+            color: '#FFAA00',
+            landable: true,
+            landingType: 'station',
+            gravity: 0.3,
+            atmosphere: 'artificial',
+            surfaceTemp: 20,
+            pressure: 1,
+            hasMagneticField: true
+        }, 
+        'Mars Orbit': { 
+            type: 'terrestrial', 
+            radius: 10, 
+            parent: 'The Sun', 
+            orbitRadius: 350, 
+            orbitSpeed: 0.0025, 
+            initialAngle: 270, 
+            color: '#FF5722',
+            landable: true,
+            landingType: 'atmospheric_entry',
+            gravity: 0.377,
+            atmosphere: 'thin', // 95% CO2, very thin
+            surfaceTemp: -65, // Average Celsius
+            pressure: 0.006,
+            hasMagneticField: false
+        },
+        'Jupiter Orbit': { 
+            type: 'gas_giant', 
+            radius: 25, 
+            parent: 'The Sun', 
+            orbitRadius: 650, 
+            orbitSpeed: 0.0015, 
+            initialAngle: 0, 
+            color: '#FF9800',
+            landable: false,
+            landingType: 'gas_giant',
+            gravity: 2.36,
+            atmosphere: 'gas_giant', // Hydrogen/helium, no surface
+            surfaceTemp: -110, // Cloud tops
+            pressure: 'infinite',
+            hasMagneticField: true
+        },
+        'Saturn Orbit': { 
+            type: 'gas_giant', 
+            radius: 22, 
+            parent: 'The Sun', 
+            orbitRadius: 850, 
+            orbitSpeed: 0.001, 
+            initialAngle: 60, 
+            color: '#FFEB3B',
+            rings: { inner: 30, outer: 45, color: '#C0C0C0' },
+            landable: false,
+            landingType: 'gas_giant',
+            gravity: 0.916,
+            atmosphere: 'gas_giant',
+            surfaceTemp: -140,
+            pressure: 'infinite',
+            hasMagneticField: true
+        },
+        'Uranus Orbit': { 
+            type: 'ice_giant', 
+            radius: 18, 
+            parent: 'The Sun', 
+            orbitRadius: 1000, 
+            orbitSpeed: 0.0008, 
+            initialAngle: 300, 
+            color: '#00BCD4',
+            landable: false,
+            landingType: 'ice_giant',
+            gravity: 0.886,
+            atmosphere: 'ice_giant', // H2, He, CH4
+            surfaceTemp: -195,
+            pressure: 'infinite',
+            hasMagneticField: true
+        },
+        'Neptune Orbit': { 
+            type: 'ice_giant', 
+            radius: 17, 
+            parent: 'The Sun', 
+            orbitRadius: 1150, 
+            orbitSpeed: 0.0007, 
+            initialAngle: 150, 
+            color: '#2196F3',
+            landable: false,
+            landingType: 'ice_giant',
+            gravity: 1.14,
+            atmosphere: 'ice_giant',
+            surfaceTemp: -200,
+            pressure: 'infinite',
+            hasMagneticField: true
+        },
     };
 
     const WEIRD_PLANETS = {
-        'Diamond Star': { type: 'star', radius: 40, parent: null, orbitRadius: 0, orbitSpeed: 0, initialAngle: 0, color: '#B9F2FF' }, 
-        'Diamond Planet': { type: 'planet', radius: 18, parent: 'Diamond Star', orbitRadius: 120, orbitSpeed: 0.008, initialAngle: 30, color: '#16D390' },
-        'Lava World': { type: 'planet', radius: 25, parent: 'Diamond Star', orbitRadius: 300, orbitSpeed: 0.005, initialAngle: 150, color: '#FF4500', rings: { inner: 30, outer: 40, color: '#FFA500' } },
-        'Ice Giant': { type: 'planet', radius: 20, parent: 'Diamond Star', orbitRadius: 550, orbitSpeed: 0.003, initialAngle: 270, color: '#ADD8E6' },
-        'Gas Ball': { type: 'planet', radius: 35, parent: 'Diamond Star', orbitRadius: 900, orbitSpeed: 0.002, initialAngle: 0, color: '#9932CC' },
-        'The Exit Gate': { type: 'planet', radius: 10, parent: 'Gas Ball', orbitRadius: 60, orbitSpeed: 0.02, initialAngle: 90, color: '#FFFFFF' }, 
+        'Diamond Star': { 
+            type: 'star', 
+            radius: 40, 
+            parent: null, 
+            orbitRadius: 0, 
+            orbitSpeed: 0, 
+            initialAngle: 0, 
+            color: '#B9F2FF',
+            landable: false,
+            landingType: 'impossible',
+            surfaceTemp: 8000,
+            atmosphere: 'plasma'
+        }, 
+        'Diamond Planet': { 
+            type: 'terrestrial', 
+            radius: 18, 
+            parent: 'Diamond Star', 
+            orbitRadius: 120, 
+            orbitSpeed: 0.008, 
+            initialAngle: 30, 
+            color: '#16D390',
+            landable: true,
+            landingType: 'normal',
+            gravity: 1.2,
+            atmosphere: 'thin',
+            surfaceTemp: -100,
+            pressure: 0.1,
+            hasMagneticField: false
+        },
+        'Lava World': { 
+            type: 'terrestrial', 
+            radius: 25, 
+            parent: 'Diamond Star', 
+            orbitRadius: 300, 
+            orbitSpeed: 0.005, 
+            initialAngle: 150, 
+            color: '#FF4500',
+            rings: { inner: 30, outer: 40, color: '#FFA500' },
+            landable: false,
+            landingType: 'extreme_heat',
+            gravity: 0.9,
+            atmosphere: 'toxic_volcanic',
+            surfaceTemp: 1200,
+            pressure: 5,
+            hasMagneticField: false
+        },
+        'Ice Giant': { 
+            type: 'terrestrial', 
+            radius: 20, 
+            parent: 'Diamond Star', 
+            orbitRadius: 550, 
+            orbitSpeed: 0.003, 
+            initialAngle: 270, 
+            color: '#ADD8E6',
+            landable: true,
+            landingType: 'atmospheric_entry',
+            gravity: 0.4,
+            atmosphere: 'thin_cold',
+            surfaceTemp: -180,
+            pressure: 0.02,
+            hasMagneticField: false
+        },
+        'Gas Ball': { 
+            type: 'gas_giant', 
+            radius: 35, 
+            parent: 'Diamond Star', 
+            orbitRadius: 900, 
+            orbitSpeed: 0.002, 
+            initialAngle: 0, 
+            color: '#9932CC',
+            landable: false,
+            landingType: 'gas_giant',
+            gravity: 3.2,
+            atmosphere: 'gas_giant',
+            surfaceTemp: -90,
+            pressure: 'infinite',
+            hasMagneticField: true
+        },
+        'Crystal Moon': { 
+            type: 'satellite', 
+            radius: 4, 
+            parent: 'Diamond Planet', 
+            orbitRadius: 28, 
+            orbitSpeed: 0.09, 
+            initialAngle: 180, 
+            color: '#99FFCC',
+            landable: true,
+            landingType: 'normal',
+            gravity: 0.2,
+            atmosphere: 'none',
+            surfaceTemp: -120,
+            pressure: 0,
+            hasMagneticField: false
+        },
+        'Plasma World': { 
+            type: 'terrestrial', 
+            radius: 15, 
+            parent: 'Diamond Star', 
+            orbitRadius: 180, 
+            orbitSpeed: 0.006, 
+            initialAngle: 60, 
+            color: '#FF00FF',
+            landable: true,
+            landingType: 'extreme_heat',
+            gravity: 0.8,
+            atmosphere: 'plasma',
+            surfaceTemp: 800,
+            pressure: 3,
+            hasMagneticField: true
+        },
+        'Void Planet': { 
+            type: 'terrestrial', 
+            radius: 20, 
+            parent: 'Diamond Star', 
+            orbitRadius: 750, 
+            orbitSpeed: 0.0015, 
+            initialAngle: 200, 
+            color: '#1a1a1a',
+            landable: true,
+            landingType: 'normal',
+            gravity: 1.5,
+            atmosphere: 'none',
+            surfaceTemp: -250,
+            pressure: 0,
+            hasMagneticField: false
+        },
+        'Rainbow World': { 
+            type: 'terrestrial', 
+            radius: 12, 
+            parent: 'Diamond Star', 
+            orbitRadius: 450, 
+            orbitSpeed: 0.0025, 
+            initialAngle: 320, 
+            color: '#FF69B4',
+            landable: true,
+            landingType: 'atmospheric_entry',
+            gravity: 0.6,
+            atmosphere: 'magical',
+            surfaceTemp: 25,
+            pressure: 0.8,
+            hasMagneticField: true
+        },
+        'Storm Giant': { 
+            type: 'gas_giant', 
+            radius: 30, 
+            parent: 'Diamond Star', 
+            orbitRadius: 650, 
+            orbitSpeed: 0.002, 
+            initialAngle: 45, 
+            color: '#9966CC',
+            landable: true,
+            landingType: 'gas_giant',
+            gravity: 2.8,
+            atmosphere: 'storm_clouds',
+            surfaceTemp: -80,
+            pressure: 'infinite',
+            hasMagneticField: true
+        },
+        // Space Stations in Weird System
+        'Diamond Station': { 
+            type: 'station', 
+            radius: 5, 
+            parent: 'Diamond Star', 
+            orbitRadius: 350, 
+            orbitSpeed: 0.004, 
+            initialAngle: 250, 
+            color: '#00FFFF',
+            landable: true,
+            landingType: 'station',
+            gravity: 0.2,
+            atmosphere: 'artificial',
+            surfaceTemp: 15,
+            pressure: 1,
+            hasMagneticField: false
+        },
+        'Crystal Refinery': { 
+            type: 'station', 
+            radius: 4, 
+            parent: 'Crystal Moon', 
+            orbitRadius: 40, 
+            orbitSpeed: 0.1, 
+            initialAngle: 0, 
+            color: '#CCFFCC',
+            landable: true,
+            landingType: 'station',
+            gravity: 0.1,
+            atmosphere: 'artificial',
+            surfaceTemp: 18,
+            pressure: 1,
+            hasMagneticField: false
+        },
+        'The Exit Gate': { 
+            type: 'anomaly', 
+            radius: 10, 
+            parent: 'Gas Ball', 
+            orbitRadius: 60, 
+            orbitSpeed: 0.02, 
+            initialAngle: 90, 
+            color: '#FFFFFF',
+            landable: true,
+            landingType: 'anomaly',
+            gravity: 0,
+            atmosphere: 'none',
+            surfaceTemp: 0,
+            pressure: 0,
+            hasMagneticField: false
+        }, 
     };
     
     // --- CORE SYSTEM FUNCTIONS ---
@@ -472,6 +1488,8 @@
     function initializeSystem(data, startLocation) {
         PLANET_DATA = data;
         SOLAR_SYSTEM = {};
+        
+        // Smooth initialization - pre-calculate positions
         for (const name in PLANET_DATA) {
             SOLAR_SYSTEM[name] = { 
                 ...PLANET_DATA[name], 
@@ -480,17 +1498,33 @@
                 y: 0 
             };
         }
+        
+        // Update all planetary positions immediately
+        updatePlanets();
+        
         gameState.location = startLocation;
+        
+        // Smooth canvas initialization
+        setTimeout(() => {
         resizeCanvas();
+            drawMap(); // Initial draw to prevent blank screen
+        }, 50);
 
         // Ensure we are in map view when jumping
-        if (gameState.view === 'surface' || gameState.view === 'landing') takeOff();
+        if (gameState.view === 'surface' || gameState.view === 'landing') {
+            takeOff();
+        }
 
+        // Reset ship state smoothly
         gameState.shipVelocityX = 0;
         gameState.shipVelocityY = 0;
         
-        document.body.style.backgroundColor = 'white';
-        setTimeout(() => { document.body.style.backgroundColor = '#0c0f18'; }, 100);
+        // Clear particles for smooth transition
+        gameState.particles = [];
+        
+        // Smooth background transition
+        document.body.style.transition = 'background-color 0.3s ease';
+        document.body.style.backgroundColor = '#0c0f18';
     }
     
     function jumpToSystem(system) {
@@ -502,99 +1536,229 @@
             gameState.systemName = 'Weird';
             gameState.landedPlanet = 'Diamond Planet'; // Set starting point
             initializeSystem(WEIRD_PLANETS, 'Diamond Planet');
+            unlockAchievement('system_jumper');
         }
+        
+        // Award points for system jump
+        gameState.score += 25;
+        showNotification('🌌 System Jump', `Welcome to the ${system} System!`, '#00ffc7');
     }
     
     // --- BLACK HOLE / COLLISION / LANDING LOGIC ---
 
-    function getClosestLandablePlanet() {
+    function getClosestCelestialBody() {
         const shipScreenX = $solarMap.width / 2;
         const shipScreenY = $solarMap.height / 2;
         
-        let closestPlanet = null;
+        let closestBody = null;
         let minDistance = Infinity;
 
         for (const name in SOLAR_SYSTEM) {
             const loc = SOLAR_SYSTEM[name];
-            // Skip stars and the exit gate
-            if (loc.type !== 'planet' || name === 'The Exit Gate') continue; 
+            // Include all celestial bodies except stars for proximity check
+            if (loc.type === 'star') continue; 
             
-            const planetScreenX = loc.x + mapOffsetX;
-            const planetScreenY = loc.y + mapOffsetY;
+            const bodyScreenX = loc.x + mapOffsetX;
+            const bodyScreenY = loc.y + mapOffsetY;
             
-            const distance = Math.sqrt((planetScreenX - shipScreenX) ** 2 + (planetScreenY - shipScreenY) ** 2);
+            const distance = Math.sqrt((bodyScreenX - shipScreenX) ** 2 + (bodyScreenY - shipScreenY) ** 2);
             
             if (distance < minDistance) {
                 minDistance = distance;
-                closestPlanet = { name, loc, distance };
+                closestBody = { name, loc, distance };
             }
         }
-        return closestPlanet;
+        return closestBody;
+    }
+    
+    function canAttemptLanding(planetData) {
+        // In fantasy mode, all planets are landable with special mechanics!
+        return { possible: true, special: planetData.landingType };
     }
 
 
     function checkLandingProximity() {
         if (gameState.view !== 'map') return;
         
-        const closestPlanet = getClosestLandablePlanet();
+        const closestBody = getClosestCelestialBody();
+        if (!closestBody) return;
         
         // Check landing criteria
         const speed = Math.sqrt(gameState.shipVelocityX ** 2 + gameState.shipVelocityY ** 2);
-        const LANDING_RANGE = 70; // Range in pixels
-        const MAX_LANDING_SPEED = 0.5; // Max velocity magnitude
+        const APPROACH_RANGE = 70; // Range in pixels
+        const MAX_APPROACH_SPEED = 0.5; // Max velocity magnitude for safe approach
 
-        // Check if the planet is a landable rock/ice body 
-        const isLandableRock = !['Jupiter Orbit', 'Saturn Orbit', 'Uranus Orbit', 'Neptune Orbit'].includes(closestPlanet?.name) && closestPlanet?.loc.type !== 'star';
+        const bodyData = closestBody.loc;
+        const landingCheck = canAttemptLanding(bodyData);
 
-        if (closestPlanet && closestPlanet.distance < LANDING_RANGE && speed < MAX_LANDING_SPEED && isLandableRock) {
+        if (closestBody.distance < APPROACH_RANGE && speed < MAX_APPROACH_SPEED) {
+            if (landingCheck.possible) {
+                // Landing is scientifically possible
             gameState.isLandingReady = true;
-            $messageBox.textContent = `[L] / [Land] to land on ${closestPlanet.name}`;
+                $messageBox.textContent = `[L] / [Land] to land on ${closestBody.name}`;
             $messageBox.style.display = 'block';
-            $landButton.textContent = `Land on ${closestPlanet.name.replace(' Orbit', '')}`;
+                $landButton.textContent = `Land on ${closestBody.name.replace(' Orbit', '')}`;
             $landButton.dataset.action = 'land';
             $landButton.style.display = 'block';
 
             if (keys.L) {
-                landOnPlanet(closestPlanet.name);
+                    attemptLanding(closestBody.name);
                 keys.L = false; // Prevent immediate re-trigger
+                }
+            } else {
+                // Landing is scientifically impossible
+                gameState.isLandingReady = false;
+                $messageBox.textContent = `⚠️ Cannot land: ${landingCheck.reason}`;
+                $messageBox.style.display = 'block';
+                $messageBox.style.color = '#ff6666'; // Red warning color
+                $landButton.style.display = 'none';
             }
         } else {
             gameState.isLandingReady = false;
             $messageBox.style.display = 'none';
-            // Only show the mobile button if landing is ready OR if in surface view
+            $messageBox.style.color = '#00ffc7'; // Reset to normal color
             if(gameState.view === 'map') $landButton.style.display = 'none';
         }
     }
 
-    function landOnPlanet(planetName) {
-        const scenario = SURFACE_SCENARIOS[planetName];
-        // Check for gas/ice giants which are non-landable but use the "surface" view for the warning
-        const isGasGiant = ['Jupiter Orbit', 'Saturn Orbit', 'Uranus Orbit', 'Neptune Orbit', 'Gas Ball'].includes(planetName) || scenario.text.includes('FATAL ERROR');
-
-        // Only start the minigame if it's a landable body
-        if (!isGasGiant) {
-            // Start Lander Minigame
+    function attemptLanding(planetName) {
+        const planetData = SOLAR_SYSTEM[planetName];
+        
+        // Determine landing sequence based on planet type - all are landable with special mechanics!
+        switch(planetData.landingType) {
+            case 'impossible': // Stars
+                startStarLanding(planetName);
+                break;
+                
+            case 'gas_giant':
+                startGasGiantLanding(planetName);
+                break;
+                
+            case 'ice_giant':
+                startIceGiantLanding(planetName);
+                break;
+                
+            case 'atmospheric_burn': // Venus
+                startExtremeLanding(planetName, 'heat');
+                break;
+                
+            case 'extreme_heat': // Lava World
+                startExtremeLanding(planetName, 'lava');
+                break;
+                
+            case 'normal':
+                startLandingSequence(planetName, 'direct');
+                break;
+                
+            case 'atmospheric_entry':
+                startAtmosphericEntry(planetName);
+                break;
+                
+            case 'anomaly':
+                handleAnomalousLanding(planetName);
+                break;
+                
+            case 'station':
+                startStationDocking(planetName);
+                break;
+                
+            default:
+                startLandingSequence(planetName, 'direct');
+        }
+    }
+    
+    function startAtmosphericEntry(planetName) {
+        const planetData = SOLAR_SYSTEM[planetName];
+        
+        // Show atmospheric entry phase
+        showNotification('🌡️ Atmospheric Entry', 'Beginning atmospheric entry sequence...', '#ffaa00');
+        
+        // Calculate entry difficulty based on atmosphere
+        let entryDifficulty = 1.0;
+        let startingAltitude = 1000;
+        let startingSpeed = -5;
+        
+        switch(planetData.atmosphere) {
+            case 'breathable': // Earth
+                entryDifficulty = 1.2;
+                startingAltitude = 1500;
+                startingSpeed = -8;
+                showNotification('💨 Atmospheric Entry', 'Dense atmosphere detected - heat shields active', '#00aaff');
+                break;
+            case 'thin': // Mars, Diamond Planet
+                entryDifficulty = 0.8;
+                startingAltitude = 800;
+                startingSpeed = -6;
+                showNotification('💨 Thin Atmosphere', 'Light atmospheric resistance detected', '#ffcc66');
+                break;
+            case 'thin_cold': // Ice Giant
+                entryDifficulty = 0.9;
+                startingAltitude = 900;
+                startingSpeed = -7;
+                showNotification('❄️ Cold Atmosphere', 'Frigid atmospheric conditions - systems nominal', '#aaccff');
+                break;
+        }
+        
+        // Start lander sequence with atmospheric parameters
             gameState.view = 'landing';
             gameState.landedPlanet = planetName;
-            gameState.landerGravity = scenario.gravity || 0.005; 
+        gameState.landerGravity = planetData.gravity * 0.01; // Convert to game units
+        gameState.landerHeight = startingAltitude;
+        gameState.landerVSpeed = startingSpeed;
+        gameState.landerHSpeed = (Math.random() - 0.5) * 2; // Random atmospheric turbulence
+        gameState.landerAngle = 0;
+        gameState.landerFuel = 100;
+        gameState.thrusting = false;
+        gameState.atmosphericEntry = true;
+        gameState.entryDifficulty = entryDifficulty;
+        
+        // Hide map UI
+        $solarMap.style.opacity = 1;
+        $spaceship.style.display = 'none';
+        $blackHole.style.display = 'none';
+        $messageBox.style.display = 'none';
+        $landButton.style.display = 'none';
+    }
+    
+    function startLandingSequence(planetName, type) {
+        const planetData = SOLAR_SYSTEM[planetName];
+        
+        // Show landing type notification
+        if (type === 'direct') {
+            showNotification('🌌 Direct Landing', 'No atmosphere detected - direct surface approach', '#cccccc');
+        }
+        
+        // Start standard lander minigame
+        gameState.view = 'landing';
+        gameState.landedPlanet = planetName;
+        gameState.landerGravity = planetData.gravity * 0.01; // Convert to game units
             gameState.landerHeight = 1000;
             gameState.landerVSpeed = -5;
             gameState.landerHSpeed = 0;
             gameState.landerAngle = 0;
             gameState.landerFuel = 100;
             gameState.thrusting = false;
+        gameState.atmosphericEntry = false;
+        gameState.entryDifficulty = 1.0;
             
             // Hide map UI
-            $solarMap.style.opacity = 1; // Keep canvas visible for drawing minigame
+        $solarMap.style.opacity = 1;
             $spaceship.style.display = 'none';
             $blackHole.style.display = 'none';
             $messageBox.style.display = 'none';
             $landButton.style.display = 'none';
-
-        } else {
-            // Use the old static view for Gas Giants and other "fatal" attempts
+    }
+    
+    function handleAnomalousLanding(planetName) {
+        // Special case for The Exit Gate
+        if (planetName === 'The Exit Gate') {
+            showNotification('🌀 Anomaly Detected', 'Dimensional gateway - approaching with caution', '#ffffff');
+            
             gameState.view = 'surface';
             gameState.landedPlanet = planetName;
+            
+            // Create special anomaly surface view
+            createAnomalySurface();
 
             // Hide map UI and show surface UI
             $solarMap.style.opacity = 0;
@@ -602,23 +1766,280 @@
             $blackHole.style.display = 'none';
             $messageBox.style.display = 'none';
             
-            // Prevent further movement in the background
-            gameState.shipVelocityX = 0;
-            gameState.shipVelocityY = 0;
-            
-            // Update surface view content and style
-            updateSurfaceView();
             $surfaceView.style.display = 'flex';
             
-            // Update mobile button for takeoff
-            $landButton.textContent = `Take Off [L]`;
+            $landButton.textContent = `Enter Gateway [L]`;
             $landButton.dataset.action = 'takeoff';
             $landButton.style.display = 'block';
+        }
+    }
+    
+    function startStarLanding(planetName) {
+        showNotification('☀️ Star Landing Protocol', 'Deploying emergency heat shields - EXTREME DANGER!', '#ffaa00');
+        
+        // Stars are extremely challenging - very fast descent, high heat damage
+        gameState.view = 'landing';
+        gameState.landedPlanet = planetName;
+        gameState.landerGravity = 0.02; // Very high gravity
+        gameState.landerHeight = 800; // Shorter approach due to heat
+        gameState.landerVSpeed = -15; // Very fast descent
+        gameState.landerHSpeed = (Math.random() - 0.5) * 4; // Solar wind effects
+        gameState.landerAngle = 0;
+        gameState.landerFuel = 100;
+        gameState.thrusting = false;
+        gameState.heatDamage = true; // New mechanic
+        gameState.heatLevel = 0;
+        
+        hideMapUI();
+    }
+    
+    function startGasGiantLanding(planetName) {
+        showNotification('🌪️ Gas Giant Descent', 'Deploying atmospheric probe - seeking floating platforms!', '#00aaff');
+        
+        // Gas giants have floating cloud cities
+        gameState.view = 'landing';
+        gameState.landedPlanet = planetName;
+        gameState.landerGravity = 0.015;
+        gameState.landerHeight = 1200; // Higher start altitude
+        gameState.landerVSpeed = -8;
+        gameState.landerHSpeed = (Math.random() - 0.5) * 6; // Strong atmospheric currents
+        gameState.landerAngle = 0;
+        gameState.landerFuel = 100;
+        gameState.thrusting = false;
+        gameState.windShear = true; // New mechanic
+        
+        hideMapUI();
+    }
+    
+    function startIceGiantLanding(planetName) {
+        showNotification('❄️ Ice Giant Protocol', 'Navigating frozen methane clouds - seeking ice platforms!', '#aaccff');
+        
+        gameState.view = 'landing';
+        gameState.landedPlanet = planetName;
+        gameState.landerGravity = 0.012;
+        gameState.landerHeight = 1000;
+        gameState.landerVSpeed = -7;
+        gameState.landerHSpeed = (Math.random() - 0.5) * 3;
+        gameState.landerAngle = 0;
+        gameState.landerFuel = 100;
+        gameState.thrusting = false;
+        gameState.iceCrystals = true; // New mechanic - ice reduces visibility
+        
+        hideMapUI();
+    }
+    
+    function startExtremeLanding(planetName, type) {
+        if (type === 'heat') {
+            showNotification('🔥 Venus Protocol', 'Deploying reinforced heat shields - pressure suits active!', '#ff6600');
+        } else {
+            showNotification('🌋 Lava World Descent', 'Heat-resistant landing gear deployed!', '#ff4400');
+        }
+        
+        gameState.view = 'landing';
+        gameState.landedPlanet = planetName;
+        gameState.landerGravity = 0.01;
+        gameState.landerHeight = 1000;
+        gameState.landerVSpeed = -6;
+        gameState.landerHSpeed = 0;
+        gameState.landerAngle = 0;
+        gameState.landerFuel = 100;
+        gameState.thrusting = false;
+        gameState.extremeHeat = true; // New mechanic
+        gameState.heatLevel = 0;
+        
+        hideMapUI();
+    }
+    
+    function hideMapUI() {
+        $solarMap.style.opacity = 1;
+        $spaceship.style.display = 'none';
+        $blackHole.style.display = 'none';
+        $messageBox.style.display = 'none';
+        $landButton.style.display = 'none';
+    }
+    
+    function startStationDocking(stationName) {
+        showNotification('🚀 Docking Protocol', `Approaching ${stationName} - automated docking systems active!`, '#00ffff');
+        
+        // Stations provide immediate docking - no minigame needed
+        gameState.view = 'surface';
+        gameState.landedPlanet = stationName;
+        
+        // Create station interior view
+        createStationInterior(stationName);
+        
+        // Hide map UI and show surface UI
+        $solarMap.style.opacity = 0;
+        $spaceship.style.display = 'none';
+        $blackHole.style.display = 'none';
+        $messageBox.style.display = 'none';
+        
+            $surfaceView.style.display = 'flex';
+            
+        // Full refuel and services at stations
+        const oldFuel = gameState.shipFuel;
+        gameState.shipFuel = 2000; // Full refuel
+        gameState.score += 25; // Bonus for finding station
+        
+        showNotification('⛽ Station Services', `Full refuel complete! +${2000 - oldFuel} fuel units`, '#00ff88');
+        
+        $landButton.textContent = `Undock [L]`;
+            $landButton.dataset.action = 'takeoff';
+            $landButton.style.display = 'block';
+    }
+    
+    function createStationInterior(stationName) {
+        $surfaceView.className = 'absolute top-0 left-0 w-full h-full z-5 overflow-hidden';
+        $surfaceView.style.background = 'linear-gradient(to bottom, #001122 0%, #003366 100%)';
+        
+        const stationData = SOLAR_SYSTEM[stationName];
+        let stationType = 'Standard';
+        let services = 'Refueling, Repairs, Supplies';
+        
+        if (stationName.includes('Diamond') || stationName.includes('Crystal')) {
+            stationType = 'Research & Mining';
+            services = 'Crystal Processing, Advanced Fuel, Research Data';
+        } else if (stationName.includes('Jovian')) {
+            stationType = 'Deep Space Outpost';
+            services = 'Heavy Fuel, Radiation Shielding, Navigation Updates';
+        }
+        
+        $surfaceView.innerHTML = `
+            <div class="station-interior" style="width: 100%; height: 100%; position: relative; overflow: hidden;">
+                
+                <!-- Station corridor background -->
+                <div class="corridor" style="
+                    position: absolute;
+                    top: 30%;
+                    left: 0;
+                    width: 100%;
+                    height: 40%;
+                    background: linear-gradient(to right, #223344 0%, #334455 50%, #223344 100%);
+                    border-top: 3px solid #00ffff;
+                    border-bottom: 3px solid #00ffff;
+                "></div>
+                
+                <!-- Station HUD -->
+                <div class="station-hud" style="
+                    position: absolute;
+                    bottom: 20px;
+                    left: 20px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: #00ffff;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    font-family: monospace;
+                    font-size: 12px;
+                    border: 2px solid #00ffff;
+                    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+                ">
+                    <div style="color: #ffffff; font-weight: bold; font-size: 14px;">${stationName}</div>
+                    <div style="margin-top: 5px; color: #66ccff;">Type: ${stationType}</div>
+                    <div style="margin-top: 3px; font-size: 11px;">Services: ${services}</div>
+                    <div style="margin-top: 8px; color: #88ff88; font-weight: bold;">✓ Docking Complete - All Systems Nominal</div>
+                    <div style="margin-top: 5px; font-size: 10px; color: #999;">Press [L] to undock and depart</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function createAnomalySurface() {
+        $surfaceView.className = 'absolute top-0 left-0 w-full h-full z-5 overflow-hidden';
+        $surfaceView.style.background = 'linear-gradient(45deg, #000033 0%, #000066 25%, #000033 50%, #000066 75%, #000033 100%)';
+        
+        $surfaceView.innerHTML = `
+            <div class="anomaly-environment" style="width: 100%; height: 100%; position: relative; overflow: hidden;">
+                
+                <!-- Swirling dimensional effect -->
+                <div class="dimensional-swirl" style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 300px;
+                    height: 300px;
+                    transform: translate(-50%, -50%);
+                    background: radial-gradient(circle, transparent 30%, rgba(255,255,255,0.1) 40%, transparent 50%);
+                    border-radius: 50%;
+                    animation: dimensional-spin 10s linear infinite;
+                "></div>
+                
+                <!-- Energy particles -->
+                <div class="energy-field" id="energy-particles"></div>
+                
+                <!-- Landing Site Marker -->
+                <div class="landing-site" style="
+                    position: absolute;
+                    bottom: 50%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 40px;
+                    height: 40px;
+                    color: #ffffff;
+                    font-size: 30px;
+                    filter: drop-shadow(0 0 20px #ffffff);
+                    z-index: 10;
+                    animation: float-ship 3s ease-in-out infinite alternate;
+                ">🚀</div>
+                
+                <!-- Anomaly HUD -->
+                <div class="surface-hud" style="
+                    position: absolute;
+                    bottom: 20px;
+                    left: 20px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: #ffffff;
+                    padding: 10px 15px;
+                    border-radius: 8px;
+                    font-family: monospace;
+                    font-size: 12px;
+                    border: 1px solid #ffffff;
+                    box-shadow: 0 0 20px rgba(255,255,255,0.3);
+                ">
+                    <div style="color: #ffffff; font-weight: bold;">Dimensional Gateway</div>
+                    <div style="margin-top: 5px; opacity: 0.8;">Reality flux detected</div>
+                    <div style="margin-top: 5px; font-size: 10px; color: #ccc;">Press [L] to enter gateway</div>
+                </div>
+            </div>
+        `;
+        
+        // Add floating energy particles
+        const energyField = document.getElementById('energy-particles');
+        if (energyField) {
+            energyField.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 2;
+            `;
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: absolute;
+                    top: ${Math.random() * 100}%;
+                    left: ${Math.random() * 100}%;
+                    width: 2px;
+                    height: 2px;
+                    background: rgba(255, 255, 255, ${0.5 + Math.random() * 0.5});
+                    border-radius: 50%;
+                    animation: energy-drift ${5 + Math.random() * 10}s linear infinite;
+                `;
+                energyField.appendChild(particle);
+            }
         }
     }
 
     function takeOff() {
         gameState.view = 'map';
+        
+        // Refuel the ship when taking off (simulating fuel depots on planets)
+        const fuelRefill = 100;
+        gameState.shipFuel = Math.min(gameState.shipFuel + fuelRefill, 2000);
+        showNotification('⛽ Refueled', `Added ${fuelRefill} fuel units`, '#00ffaa');
+        
         gameState.landedPlanet = null;
 
         // Show map UI and hide surface UI
@@ -634,51 +2055,744 @@
 
     function updateSurfaceView() {
         const scenario = SURFACE_SCENARIOS[gameState.landedPlanet] || { 
-            theme: 'bg-gradient-to-br from-gray-700 to-gray-900', 
             title: 'Unknown World', 
-            text: `You have successfully landed on ${gameState.landedPlanet}. It is remarkably flat and quiet.`, 
-            activity: 'Perform basic diagnostics.',
-            color: '#444' // Default color for surface view
+            color: '#444',
+            skyColor: '#001122',
+            surfaceColor: '#444',
+            atmosphereType: 'none'
         };
         
-        // Determine the main background color for the screen
-        const bgColor = scenario.color || '#444'; 
         const isCrash = scenario.title.includes('CRASH');
 
-        // Apply the surface color/gradient to the background of the surface-view container
-        $surfaceView.className = 'absolute top-0 left-0 w-full h-full z-5 flex flex-col items-start p-4 md:p-8 text-white';
-        $surfaceView.style.background = isCrash 
-            ? 'linear-gradient(to bottom right, #400 0%, #100 100%)' 
-            : `linear-gradient(to bottom, #333 0%, ${bgColor} 100%)`; // Switched gradient direction for horizon look
+        // Clear the surface view
+        $surfaceView.className = 'absolute top-0 left-0 w-full h-full z-5 overflow-hidden';
+        $surfaceView.style.background = 'transparent';
+        
+        // Create the visual surface environment
+        createSurfaceEnvironment(scenario, isCrash);
+    }
+    
+    function createSurfaceEnvironment(scenario, isCrash) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        // Determine environment colors and effects based on planet
+        let skyGradient, surfaceColor, atmosphereEffects, starVisibility, sunColor, terrainType;
+        
+        switch(gameState.landedPlanet) {
+            case 'Mercury Orbit':
+                skyGradient = 'linear-gradient(to bottom, #000000 0%, #1a1a00 100%)';
+                surfaceColor = '#666666';
+                starVisibility = true;
+                sunColor = '#ffffff';
+                terrainType = 'mercury';
+                atmosphereEffects = 'none';
+                break;
+                
+            case 'Venus Orbit':
+                skyGradient = 'linear-gradient(to bottom, #ff6600 0%, #cc3300 50%, #990000 100%)';
+                surfaceColor = '#cc4400';
+                starVisibility = false;
+                atmosphereEffects = 'thick_clouds';
+                terrainType = 'venus';
+                break;
+                
+            case 'Earth Orbit':
+                skyGradient = 'linear-gradient(to bottom, #87CEEB 0%, #98D8E8 30%, #B0E0E6 70%, #87CEEB 100%)';
+                surfaceColor = '#228B22';
+                starVisibility = false;
+                sunColor = '#ffff99';
+                atmosphereEffects = 'clouds';
+                terrainType = 'earth';
+                break;
+                
+            case 'The Moon':
+                skyGradient = 'linear-gradient(to bottom, #000000 0%, #111111 100%)';
+                surfaceColor = '#888888';
+                starVisibility = true;
+                sunColor = '#ffffff';
+                terrainType = 'lunar';
+                atmosphereEffects = 'none';
+                break;
+                
+            case 'Mars Orbit':
+                skyGradient = 'linear-gradient(to bottom, #ff9966 0%, #cc6633 50%, #994422 100%)';
+                surfaceColor = '#cc4422';
+                starVisibility = false;
+                atmosphereEffects = 'mars_dust';
+                terrainType = 'mars';
+                break;
+                
+            case 'Phobos':
+                skyGradient = 'linear-gradient(to bottom, #000000 0%, #330000 100%)';
+                surfaceColor = '#8B4513';
+                starVisibility = true;
+                terrainType = 'phobos';
+                atmosphereEffects = 'none';
+                break;
+                
+            case 'Deimos':
+                skyGradient = 'linear-gradient(to bottom, #000000 0%, #110000 100%)';
+                surfaceColor = '#654321';
+                starVisibility = true;
+                terrainType = 'deimos';
+                atmosphereEffects = 'none';
+                break;
+                
+            case 'Europa':
+                skyGradient = 'linear-gradient(to bottom, #000011 0%, #001133 100%)';
+                surfaceColor = '#E0E0E0';
+                starVisibility = true;
+                terrainType = 'europa';
+                atmosphereEffects = 'aurora';
+                break;
+                
+            case 'Titan':
+                skyGradient = 'linear-gradient(to bottom, #ff9933 0%, #cc6600 50%, #994400 100%)';
+                surfaceColor = '#FFA500';
+                starVisibility = false;
+                terrainType = 'titan';
+                atmosphereEffects = 'methane_haze';
+                break;
+                
+            case 'Jupiter Orbit':
+                skyGradient = 'linear-gradient(to bottom, #ff9900 0%, #cc6600 50%, #994400 100%)';
+                surfaceColor = '#FF9800';
+                starVisibility = false;
+                terrainType = 'jupiter_platform';
+                atmosphereEffects = 'storm_clouds';
+                break;
+                
+            case 'Saturn Orbit':
+                skyGradient = 'linear-gradient(to bottom, #ffcc66 0%, #ffaa33 50%, #cc8800 100%)';
+                surfaceColor = '#FFEB3B';
+                starVisibility = false;
+                terrainType = 'saturn_rings';
+                atmosphereEffects = 'ring_particles';
+                break;
+                
+            case 'The Sun':
+                skyGradient = 'linear-gradient(to bottom, #ffff00 0%, #ff9900 50%, #ff6600 100%)';
+                surfaceColor = '#FFD700';
+                starVisibility = false;
+                terrainType = 'solar_platform';
+                atmosphereEffects = 'plasma_storms';
+                break;
+                
+            case 'Diamond Planet':
+                skyGradient = 'linear-gradient(to bottom, #001133 0%, #002244 50%, #003366 100%)';
+                surfaceColor = '#88ccff';
+                starVisibility = true;
+                terrainType = 'crystal';
+                atmosphereEffects = 'shimmer';
+                break;
+                
+            case 'Lava World':
+                skyGradient = 'linear-gradient(to bottom, #660000 0%, #cc3300 50%, #ff6600 100%)';
+                surfaceColor = '#ff4400';
+                starVisibility = false;
+                terrainType = 'lava';
+                atmosphereEffects = 'heat_shimmer';
+                break;
+                
+            case 'Ice Giant':
+                skyGradient = 'linear-gradient(to bottom, #cceeff 0%, #99ccff 50%, #6699cc 100%)';
+                surfaceColor = '#ffffff';
+                starVisibility = false;
+                terrainType = 'ice';
+                atmosphereEffects = 'snow';
+                break;
+                
+            default:
+                skyGradient = 'linear-gradient(to bottom, #001122 0%, #112233 100%)';
+                surfaceColor = '#444444';
+                starVisibility = true;
+                terrainType = 'generic';
+                atmosphereEffects = 'none';
+        }
+        
+        if (isCrash) {
+            skyGradient = 'linear-gradient(to bottom, #330000 0%, #110000 100%)';
+            surfaceColor = '#220000';
+        }
 
         $surfaceView.innerHTML = `
-            <div class="p-4 md:p-6 bg-black bg-opacity-70 backdrop-blur-sm rounded-lg border-2 border-cyan-400/50 shadow-lg mt-16 ml-5 w-80">
+            <div class="surface-environment" style="width: 100%; height: 100%; position: relative; overflow: hidden;">
                 
-                <h2 class="text-3xl font-extrabold ${isCrash ? 'text-red-400' : 'text-cyan-400'} tracking-wider mb-2">
-                    ${scenario.title}
-                </h2>
+                <!-- Sky Background -->
+                <div class="sky" style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 70%;
+                    background: ${skyGradient};
+                "></div>
                 
-                <p class="text-sm leading-relaxed mb-4 text-gray-200">
-                    ${scenario.text.replace(/\*\*/g, '')}
-                </p>
+                <!-- Stars (if visible) -->
+                ${starVisibility ? '<div id="surface-stars" class="stars"></div>' : ''}
                 
-                <p class="text-xs font-bold ${isCrash ? 'text-orange-400' : 'text-yellow-400'}">
-                    // OBJECTIVE: ${scenario.activity}
-                </p>
-                <p class="mt-4 text-xs text-gray-400">Press [L] or [Take Off] to return to orbit.</p>
-            </div>
-            
-            <div class="absolute inset-x-0 bottom-0 h-40" style="background-color: #333; border-top: 5px solid ${bgColor};">
-                <div class="absolute left-1/2 top-[-30px] w-16 h-16 rounded-full" 
-                    style="transform: translateX(-50%); background-color: ${isCrash ? '#FF4444' : '#FFFFC7'}; filter: blur(20px); opacity: 0.8;">
+                <!-- Sun/Light Source -->
+                ${sunColor ? `<div class="sun" style="
+                    position: absolute;
+                    top: 15%;
+                    right: 20%;
+                    width: 80px;
+                    height: 80px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, ${sunColor} 0%, ${sunColor}80 70%, transparent 100%);
+                    box-shadow: 0 0 50px ${sunColor}60;
+                "></div>` : ''}
+                
+                <!-- Terrain/Surface -->
+                <div class="terrain" style="
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 30%;
+                    background: ${surfaceColor};
+                    overflow: hidden;
+                " id="terrain-container"></div>
+                
+                <!-- Atmospheric Effects -->
+                <div class="atmosphere-effects" id="atmosphere-effects"></div>
+                
+                <!-- Landing Site Marker -->
+                <div class="landing-site" style="
+                    position: absolute;
+                    bottom: 30%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 40px;
+                    height: 40px;
+                    color: #00ffc7;
+                    font-size: 30px;
+                    filter: drop-shadow(0 0 10px #00ffc7);
+                    z-index: 10;
+                ">🚀</div>
+                
+                <!-- Minimal HUD Overlay -->
+                <div class="surface-hud" style="
+                    position: absolute;
+                    bottom: 20px;
+                    left: 20px;
+                    background: rgba(0, 0, 0, 0.7);
+                    color: #00ffc7;
+                    padding: 10px 15px;
+                    border-radius: 8px;
+                    font-family: monospace;
+                    font-size: 12px;
+                    border: 1px solid #00ffc7;
+                ">
+                    <div style="color: #ffffff; font-weight: bold;">${scenario.title}</div>
+                    <div style="margin-top: 5px; opacity: 0.8;">Landing successful</div>
+                    <div style="margin-top: 5px; font-size: 10px; color: #999;">Press [L] to return to orbit</div>
                 </div>
             </div>
         `;
+        
+        // Add terrain details and atmospheric effects
+        addTerrainDetails(terrainType);
+        addAtmosphericEffects(atmosphereEffects);
+        
+        // Add stars if visible
+        if (starVisibility) {
+            addSurfaceStars();
+        }
 
         // Ensure the mobile Take Off button is correctly set and shown
         $landButton.textContent = `Take Off [L]`;
         $landButton.dataset.action = 'takeoff';
         $landButton.style.display = 'block';
+    }
+    
+    function addTerrainDetails(terrainType) {
+        const terrainContainer = document.getElementById('terrain-container');
+        if (!terrainContainer) return;
+        
+        const width = window.innerWidth;
+        
+        // Create terrain based on type
+        switch(terrainType) {
+            case 'mercury':
+                // Mercury: Heavily cratered, metallic surface
+                for (let i = 0; i < 12; i++) {
+                    const crater = document.createElement('div');
+                    crater.style.cssText = `
+                        position: absolute;
+                        bottom: -${Math.random() * 15}px;
+                        left: ${Math.random() * width}px;
+                        width: ${25 + Math.random() * 50}px;
+                        height: ${12 + Math.random() * 25}px;
+                        border-radius: 50%;
+                        background: radial-gradient(ellipse at center, #555 0%, #666 100%);
+                        border: 1px solid #777;
+                        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+                    `;
+                    terrainContainer.appendChild(crater);
+                }
+                // Add metallic rocks
+                for (let i = 0; i < 6; i++) {
+                    const rock = document.createElement('div');
+                    rock.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${15 + Math.random() * 30}px;
+                        height: ${10 + Math.random() * 20}px;
+                        background: linear-gradient(45deg, #888 0%, #aaa 50%, #888 100%);
+                        border-radius: ${Math.random() * 30}% ${Math.random() * 30}% 0 0;
+                    `;
+                    terrainContainer.appendChild(rock);
+                }
+                break;
+                
+            case 'venus':
+                // Venus: Volcanic landscape with lava flows
+                for (let i = 0; i < 8; i++) {
+                    const volcano = document.createElement('div');
+                    volcano.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: 0;
+                        height: 0;
+                        border-left: ${15 + Math.random() * 25}px solid transparent;
+                        border-right: ${15 + Math.random() * 25}px solid transparent;
+                        border-bottom: ${25 + Math.random() * 35}px solid #aa4400;
+                        filter: drop-shadow(0 0 5px #ff6600);
+                    `;
+                    terrainContainer.appendChild(volcano);
+                }
+                // Add lava pools
+                for (let i = 0; i < 5; i++) {
+                    const lava = document.createElement('div');
+                    lava.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${30 + Math.random() * 60}px;
+                        height: ${8 + Math.random() * 15}px;
+                        background: radial-gradient(ellipse, #ff6600 0%, #cc4400 100%);
+                        border-radius: 50%;
+                        animation: lava-glow 2s ease-in-out infinite alternate;
+                    `;
+                    terrainContainer.appendChild(lava);
+                }
+                break;
+                
+            case 'mars':
+                // Mars: Canyons, volcanoes, dry lake beds, craters with red dust
+                
+                // Olympus Mons (massive volcano)
+                const olympusMons = document.createElement('div');
+                olympusMons.style.cssText = `
+                    position: absolute;
+                    bottom: 0;
+                    left: ${width * 0.7}px;
+                    width: 0;
+                    height: 0;
+                    border-left: 40px solid transparent;
+                    border-right: 40px solid transparent;
+                    border-bottom: 60px solid #cc4422;
+                    filter: drop-shadow(0 0 10px #994422);
+                `;
+                terrainContainer.appendChild(olympusMons);
+                
+                // Valles Marineris (grand canyon)
+                const vallesMarineris = document.createElement('div');
+                vallesMarineris.style.cssText = `
+                    position: absolute;
+                    bottom: 0;
+                    left: ${width * 0.2}px;
+                    width: ${width * 0.3}px;
+                    height: 25px;
+                    background: linear-gradient(to bottom, #994422 0%, #663311 50%, #441100 100%);
+                    border-radius: 0 0 20px 20px;
+                    box-shadow: inset 0 5px 15px rgba(0,0,0,0.5);
+                `;
+                terrainContainer.appendChild(vallesMarineris);
+                
+                // Impact craters
+                for (let i = 0; i < 8; i++) {
+                    const crater = document.createElement('div');
+                    crater.style.cssText = `
+                        position: absolute;
+                        bottom: -${Math.random() * 10}px;
+                        left: ${Math.random() * width}px;
+                        width: ${20 + Math.random() * 40}px;
+                        height: ${10 + Math.random() * 20}px;
+                        border-radius: 50%;
+                        background: radial-gradient(ellipse at center, #aa3311 0%, #cc4422 100%);
+                        border: 2px solid #994422;
+                        box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+                    `;
+                    terrainContainer.appendChild(crater);
+                }
+                
+                // Dry lake beds (ancient water features)
+                for (let i = 0; i < 3; i++) {
+                    const lakeBed = document.createElement('div');
+                    lakeBed.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${40 + Math.random() * 80}px;
+                        height: ${5 + Math.random() * 10}px;
+                        background: linear-gradient(to right, #bb5533 0%, #dd6644 50%, #bb5533 100%);
+                        border-radius: 50%;
+                        opacity: 0.8;
+                    `;
+                    terrainContainer.appendChild(lakeBed);
+                }
+                
+                // Rocky outcrops
+                for (let i = 0; i < 10; i++) {
+                    const rock = document.createElement('div');
+                    rock.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${10 + Math.random() * 25}px;
+                        height: ${8 + Math.random() * 18}px;
+                        background: #aa3311;
+                        border-radius: ${Math.random() * 40}% ${Math.random() * 40}% 0 0;
+                        box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                    `;
+                    terrainContainer.appendChild(rock);
+                }
+                break;
+                
+            case 'phobos':
+                // Phobos: Potato-shaped, heavily cratered, grooved surface
+                for (let i = 0; i < 15; i++) {
+                    const groove = document.createElement('div');
+                    groove.style.cssText = `
+                        position: absolute;
+                        bottom: ${Math.random() * 40}px;
+                        left: ${Math.random() * width}px;
+                        width: ${60 + Math.random() * 100}px;
+                        height: 3px;
+                        background: #654321;
+                        transform: rotate(${Math.random() * 30 - 15}deg);
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+                    `;
+                    terrainContainer.appendChild(groove);
+                }
+                // Stickney crater (largest crater)
+                const stickney = document.createElement('div');
+                stickney.style.cssText = `
+                    position: absolute;
+                    bottom: -15px;
+                    left: ${width * 0.3}px;
+                    width: 80px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: radial-gradient(ellipse at center, #543210 0%, #765432 100%);
+                    border: 2px solid #876543;
+                    box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
+                `;
+                terrainContainer.appendChild(stickney);
+                break;
+                
+            case 'europa':
+                // Europa: Icy surface with cracks and ridges
+                for (let i = 0; i < 20; i++) {
+                    const iceCrack = document.createElement('div');
+                    iceCrack.style.cssText = `
+                        position: absolute;
+                        bottom: ${Math.random() * 50}px;
+                        left: ${Math.random() * width}px;
+                        width: ${40 + Math.random() * 120}px;
+                        height: 2px;
+                        background: linear-gradient(to right, #aaccff 0%, #ffffff 50%, #aaccff 100%);
+                        transform: rotate(${Math.random() * 45 - 22.5}deg);
+                        box-shadow: 0 0 3px rgba(170, 204, 255, 0.5);
+                    `;
+                    terrainContainer.appendChild(iceCrack);
+                }
+                // Ice ridges
+                for (let i = 0; i < 8; i++) {
+                    const ridge = document.createElement('div');
+                    ridge.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${20 + Math.random() * 40}px;
+                        height: ${5 + Math.random() * 12}px;
+                        background: linear-gradient(135deg, #ffffff 0%, #ccddff 100%);
+                        border-radius: 0 0 3px 3px;
+                        opacity: 0.9;
+                    `;
+                    terrainContainer.appendChild(ridge);
+                }
+                break;
+                
+            case 'lunar':
+                // Add craters
+                for (let i = 0; i < 5; i++) {
+                    const crater = document.createElement('div');
+                    crater.style.cssText = `
+                        position: absolute;
+                        bottom: -${Math.random() * 20}px;
+                        left: ${Math.random() * width}px;
+                        width: ${30 + Math.random() * 60}px;
+                        height: ${15 + Math.random() * 30}px;
+                        border-radius: 50%;
+                        background: radial-gradient(ellipse at center, #666 0%, #888 100%);
+                        border: 2px solid #777;
+                    `;
+                    terrainContainer.appendChild(crater);
+                }
+                break;
+                
+            case 'earth':
+                // Add vegetation
+                for (let i = 0; i < 12; i++) {
+                    const tree = document.createElement('div');
+                    tree.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: 8px;
+                        height: ${20 + Math.random() * 30}px;
+                        background: #654321;
+                    `;
+                    const leaves = document.createElement('div');
+                    leaves.style.cssText = `
+                        position: absolute;
+                        top: -10px;
+                        left: -8px;
+                        width: 24px;
+                        height: 24px;
+                        background: #228B22;
+                        border-radius: 50%;
+                    `;
+                    tree.appendChild(leaves);
+                    terrainContainer.appendChild(tree);
+                }
+                break;
+                
+            case 'crystal':
+                // Add crystal formations
+                for (let i = 0; i < 6; i++) {
+                    const crystal = document.createElement('div');
+                    crystal.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: 0;
+                        height: 0;
+                        border-left: ${10 + Math.random() * 20}px solid transparent;
+                        border-right: ${10 + Math.random() * 20}px solid transparent;
+                        border-bottom: ${30 + Math.random() * 40}px solid #88ccff;
+                        filter: brightness(1.2) drop-shadow(0 0 10px #88ccff);
+                    `;
+                    terrainContainer.appendChild(crystal);
+                }
+                break;
+                
+            case 'lava':
+                // Add lava flows
+                for (let i = 0; i < 4; i++) {
+                    const lavaFlow = document.createElement('div');
+                    lavaFlow.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${40 + Math.random() * 80}px;
+                        height: ${5 + Math.random() * 15}px;
+                        background: linear-gradient(90deg, #ff4400 0%, #ff6600 50%, #ff4400 100%);
+                        border-radius: 10px;
+                        box-shadow: 0 0 20px #ff4400;
+                        animation: lava-glow 2s ease-in-out infinite alternate;
+                    `;
+                    terrainContainer.appendChild(lavaFlow);
+                }
+                break;
+                
+            case 'ice':
+                // Add ice formations
+                for (let i = 0; i < 10; i++) {
+                    const ice = document.createElement('div');
+                    ice.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${15 + Math.random() * 30}px;
+                        height: ${10 + Math.random() * 20}px;
+                        background: linear-gradient(135deg, #ffffff 0%, #ccddff 100%);
+                        border-radius: 0 0 5px 5px;
+                        opacity: 0.9;
+                    `;
+                    terrainContainer.appendChild(ice);
+                }
+                break;
+        }
+    }
+    
+    function addAtmosphericEffects(effectType) {
+        const effectsContainer = document.getElementById('atmosphere-effects');
+        if (!effectsContainer) return;
+        
+        effectsContainer.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        `;
+        
+        switch(effectType) {
+            case 'clouds':
+                // Add floating clouds
+                for (let i = 0; i < 3; i++) {
+                    const cloud = document.createElement('div');
+                    cloud.style.cssText = `
+                        position: absolute;
+                        top: ${20 + Math.random() * 30}%;
+                        left: ${Math.random() * 100}%;
+                        width: ${80 + Math.random() * 120}px;
+                        height: ${30 + Math.random() * 20}px;
+                        background: rgba(255, 255, 255, 0.6);
+                        border-radius: 50px;
+                        animation: float-clouds ${10 + Math.random() * 10}s linear infinite;
+                    `;
+                    effectsContainer.appendChild(cloud);
+                }
+                break;
+                
+            case 'dust':
+                // Add dust particles
+                for (let i = 0; i < 15; i++) {
+                    const dust = document.createElement('div');
+                    dust.style.cssText = `
+                        position: absolute;
+                        top: ${Math.random() * 100}%;
+                        left: ${Math.random() * 100}%;
+                        width: 3px;
+                        height: 3px;
+                        background: rgba(204, 102, 51, 0.7);
+                        border-radius: 50%;
+                        animation: drift ${5 + Math.random() * 10}s linear infinite;
+                    `;
+                    effectsContainer.appendChild(dust);
+                }
+                break;
+                
+            case 'snow':
+                // Add snowflakes
+                for (let i = 0; i < 20; i++) {
+                    const snow = document.createElement('div');
+                    snow.style.cssText = `
+                        position: absolute;
+                        top: ${Math.random() * 100}%;
+                        left: ${Math.random() * 100}%;
+                        width: 4px;
+                        height: 4px;
+                        background: rgba(255, 255, 255, 0.8);
+                        border-radius: 50%;
+                        animation: snow-fall ${3 + Math.random() * 7}s linear infinite;
+                    `;
+                    effectsContainer.appendChild(snow);
+                }
+                break;
+                
+            case 'mars_dust':
+                // Add red dust particles blowing across Mars
+                for (let i = 0; i < 25; i++) {
+                    const dust = document.createElement('div');
+                    dust.style.cssText = `
+                        position: absolute;
+                        top: ${Math.random() * 100}%;
+                        left: ${Math.random() * 100}%;
+                        width: 3px;
+                        height: 3px;
+                        background: rgba(204, 68, 34, 0.6);
+                        border-radius: 50%;
+                        animation: drift ${4 + Math.random() * 8}s linear infinite;
+                    `;
+                    effectsContainer.appendChild(dust);
+                }
+                break;
+                
+            case 'aurora':
+                // Add aurora effects for Europa (Jupiter's radiation)
+                for (let i = 0; i < 8; i++) {
+                    const aurora = document.createElement('div');
+                    aurora.style.cssText = `
+                        position: absolute;
+                        top: ${10 + Math.random() * 40}%;
+                        left: ${Math.random() * 100}%;
+                        width: 2px;
+                        height: ${30 + Math.random() * 40}px;
+                        background: linear-gradient(to bottom, 
+                            rgba(0, 255, 100, 0.8) 0%, 
+                            rgba(0, 150, 255, 0.6) 50%, 
+                            rgba(255, 0, 150, 0.4) 100%);
+                        animation: aurora-dance ${3 + Math.random() * 4}s ease-in-out infinite alternate;
+                        filter: blur(1px);
+                    `;
+                    effectsContainer.appendChild(aurora);
+                }
+                break;
+                
+            case 'methane_haze':
+                // Add orange methane haze for Titan
+                for (let i = 0; i < 15; i++) {
+                    const haze = document.createElement('div');
+                    haze.style.cssText = `
+                        position: absolute;
+                        top: ${Math.random() * 80}%;
+                        left: ${Math.random() * 100}%;
+                        width: ${20 + Math.random() * 40}px;
+                        height: ${15 + Math.random() * 25}px;
+                        background: rgba(255, 165, 0, 0.3);
+                        border-radius: 50%;
+                        animation: slow-drift ${8 + Math.random() * 12}s linear infinite;
+                        filter: blur(3px);
+                    `;
+                    effectsContainer.appendChild(haze);
+                }
+                break;
+        }
+    }
+    
+    function addSurfaceStars() {
+        const starsContainer = document.getElementById('surface-stars');
+        if (!starsContainer) return;
+        
+        starsContainer.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            pointer-events: none;
+            z-index: 2;
+        `;
+        
+        // Add stars to the sky
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            const size = Math.random() * 2 + 1;
+            const twinkleSpeed = 2 + Math.random() * 3;
+            
+            star.style.cssText = `
+                position: absolute;
+                top: ${Math.random() * 80}%;
+                left: ${Math.random() * 100}%;
+                width: ${size}px;
+                height: ${size}px;
+                background: rgba(255, 255, 255, ${0.6 + Math.random() * 0.4});
+                border-radius: 50%;
+                animation: twinkle ${twinkleSpeed}s ease-in-out infinite alternate;
+            `;
+            starsContainer.appendChild(star);
+        }
     }
 
 
@@ -693,8 +2807,140 @@
         
         const distance = Math.sqrt((bhScreenX - shipScreenX) ** 2 + (bhScreenY - shipScreenY) ** 2);
 
-        if (distance < BLACK_HOLE_POS.size * 0.5) {
+        // Black hole has multiple zones
+        const eventHorizon = BLACK_HOLE_POS.size * 0.3; // Point of no return
+        const gravitationalPull = BLACK_HOLE_POS.size * 0.8; // Starts pulling ship
+        const safeJumpZone = BLACK_HOLE_POS.size * 0.5; // Original jump zone
+        
+        if (distance < eventHorizon) {
+            // Absorbed by black hole - dramatic effect!
+            blackHoleAbsorption();
+        } else if (distance < safeJumpZone && distance > eventHorizon) {
+            // Safe jump zone - transport to weird system
             jumpToSystem('Weird');
+        } else if (distance < gravitationalPull) {
+            // Gravitational pull zone - ship gets pulled toward black hole
+            applyBlackHoleGravity(bhScreenX, bhScreenY, distance);
+        }
+    }
+    
+    function applyBlackHoleGravity(bhX, bhY, distance) {
+        const shipScreenX = $solarMap.width / 2;
+        const shipScreenY = $solarMap.height / 2;
+        
+        // Calculate gravitational force (stronger when closer)
+        const gravityStrength = 0.002 * (BLACK_HOLE_POS.size / distance);
+        
+        // Direction vector toward black hole
+        const dirX = (bhX - shipScreenX) / distance;
+        const dirY = (bhY - shipScreenY) / distance;
+        
+        // Apply gravitational acceleration
+        gameState.shipVelocityX += dirX * gravityStrength;
+        gameState.shipVelocityY += dirY * gravityStrength;
+        
+        // Show gravitational warning
+        if (Math.random() < 0.05) { // Show occasionally
+            showNotification('⚠️ Gravitational Field', 'Black hole gravity detected - maintain thrust!', '#ff6666');
+        }
+        
+        // Create gravitational distortion particles
+        if (Math.random() < 0.3) {
+            createGravitationalParticles(bhX, bhY);
+        }
+    }
+    
+    function blackHoleAbsorption() {
+        showNotification('💀 EVENT HORIZON', 'BLACK HOLE ABSORPTION - SPAGHETTIFICATION!', '#ff0000');
+        
+        // Dramatic absorption sequence
+        gameState.view = 'absorption';
+        
+        // Create absorption effect
+        $surfaceView.className = 'absolute top-0 left-0 w-full h-full z-5 overflow-hidden';
+        $surfaceView.style.background = 'radial-gradient(circle, #000000 0%, #220000 50%, #000000 100%)';
+        
+        $surfaceView.innerHTML = `
+            <div class="absorption-effect" style="width: 100%; height: 100%; position: relative; overflow: hidden;">
+                <div class="vortex" style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 500px;
+                    height: 500px;
+                    transform: translate(-50%, -50%);
+                    background: radial-gradient(circle, transparent 20%, rgba(255,0,0,0.3) 40%, transparent 60%);
+                    border-radius: 50%;
+                    animation: vortex-spin 2s linear infinite;
+                "></div>
+                
+                <div class="ship-stretch" style="
+                    position: absolute;
+                    bottom: 50%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 40px;
+                    height: 200px;
+                    color: #00ffc7;
+                    font-size: 30px;
+                    filter: drop-shadow(0 0 20px #ff0000);
+                    z-index: 10;
+                    animation: spaghetti 3s ease-in forwards;
+                ">🚀</div>
+                
+                <div class="absorption-hud" style="
+                    position: absolute;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: #ff0000;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    font-family: monospace;
+                    font-size: 14px;
+                    border: 2px solid #ff0000;
+                    text-align: center;
+                    animation: flicker 0.5s infinite;
+                ">
+                    <div style="font-weight: bold; margin-bottom: 5px;">CRITICAL SYSTEM FAILURE</div>
+                    <div style="font-size: 12px;">Structural integrity: COMPROMISED</div>
+                    <div style="font-size: 12px;">Dimensional displacement in progress...</div>
+                </div>
+            </div>
+        `;
+        
+        $surfaceView.style.display = 'flex';
+        $solarMap.style.opacity = 0;
+        $spaceship.style.display = 'none';
+        $blackHole.style.display = 'none';
+        $messageBox.style.display = 'none';
+        $landButton.style.display = 'none';
+        
+        // After 4 seconds, transport to weird system but with damage
+        setTimeout(() => {
+            gameState.shipFuel = Math.max(50, gameState.shipFuel * 0.3); // Lose most fuel
+            gameState.score = Math.max(0, gameState.score - 200); // Lose score
+            showNotification('🌀 Dimensional Rift', 'Emergency displacement to parallel dimension!', '#9966cc');
+            jumpToSystem('Weird');
+        }, 4000);
+    }
+    
+    function createGravitationalParticles(bhX, bhY) {
+        // Create particles that spiral toward black hole
+        for (let i = 0; i < 3; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 100 + Math.random() * 200;
+            const x = bhX + Math.cos(angle) * distance;
+            const y = bhY + Math.sin(angle) * distance;
+            
+            // Velocity toward black hole with spiral
+            const vx = -Math.cos(angle) * 2 + Math.sin(angle) * 1;
+            const vy = -Math.sin(angle) * 2 - Math.cos(angle) * 1;
+            
+            gameState.particles.push(new Particle(
+                x, y, vx, vy, '#ff6600', 40, Math.random() * 2 + 1
+            ));
         }
     }
     
@@ -761,10 +3007,13 @@
 
         // Thrust
         let thrusting = false;
-        if (keys.W || keys.ArrowUp) {
+        if ((keys.W || keys.ArrowUp) && gameState.shipFuel > 0) {
             gameState.shipVelocityX += Math.cos(shipAngle) * shipThrust;
             gameState.shipVelocityY += Math.sin(shipAngle) * shipThrust;
+            gameState.shipFuel -= 0.5; // Consume fuel
             thrusting = true;
+            createThrustParticles(); // Add visual effects
+            soundManager.play('thrust'); // Add sound effect
         }
         
         // Brake
@@ -901,6 +3150,9 @@
         // Update and draw Black Hole
         updateBlackHole();
 
+        // Draw particle effects
+        drawParticles();
+
         // Draw Planets, Orbits, and update their positions
         for (const name in SOLAR_SYSTEM) {
             const loc = SOLAR_SYSTEM[name];
@@ -1030,15 +3282,34 @@
     function updateLanderPhysics() {
         if (gameState.view !== 'landing') return;
 
-        const { landerVSpeed, landerHSpeed, landerGravity, landerHeight, landerAngle } = gameState;
+        const { landerVSpeed, landerHSpeed, landerGravity, landerHeight, landerAngle, atmosphericEntry, entryDifficulty } = gameState;
         
-        // 1. Apply Gravity
+        // 1. Apply Gravity (adjusted for planet)
         gameState.landerVSpeed -= landerGravity; 
 
-        // 2. Update Altitude
+        // 2. Apply Atmospheric Effects if in atmosphere
+        if (atmosphericEntry && landerHeight > 100) {
+            // Atmospheric drag reduces horizontal speed more
+            gameState.landerHSpeed *= (0.99 - entryDifficulty * 0.005);
+            
+            // Atmospheric turbulence
+            if (Math.random() < 0.1) {
+                gameState.landerHSpeed += (Math.random() - 0.5) * 0.5 * entryDifficulty;
+            }
+            
+            // Heat shield effects at high altitude
+            if (landerHeight > 500 && Math.abs(landerVSpeed) > 10) {
+                // Create heat trail particles
+                if (Math.random() < 0.3) {
+                    createHeatTrailParticles();
+                }
+            }
+        }
+
+        // 3. Update Altitude
         gameState.landerHeight += landerVSpeed * 10; // * 10 to make meters move faster
 
-        // 3. Check for Landing
+        // 4. Check for Landing
         if (gameState.landerHeight <= 0) {
             
             // Freeze movement
@@ -1046,22 +3317,63 @@
             gameState.landerHSpeed = 0;
             gameState.landerHeight = 0;
 
-            // Successful Landing Check
+            // Successful Landing Check (adjusted for planet conditions)
             const finalVSpeed = landerVSpeed * 10; // Display speed in m/s
             const finalHSpeed = landerHSpeed * 10;
             const finalAngle = Math.abs(landerAngle);
 
-            // Tolerance: VSpeed < 3 m/s, HSpeed < 1 m/s, Angle near 0
-            if (Math.abs(finalVSpeed) < 3 && Math.abs(finalHSpeed) < 1 && finalAngle < 0.1) {
+            // Get planet-specific landing tolerances
+            const planetData = SOLAR_SYSTEM[gameState.landedPlanet];
+            let maxVSpeed = 3; // Default
+            let maxHSpeed = 1; // Default
+            let maxAngle = 0.1; // Default
+            
+            // Adjust tolerances based on planet gravity and conditions
+            if (planetData.gravity < 0.5) {
+                // Low gravity worlds are more forgiving
+                maxVSpeed = 5;
+                maxHSpeed = 2;
+            } else if (planetData.gravity > 1.5) {
+                // High gravity worlds are less forgiving
+                maxVSpeed = 2;
+                maxHSpeed = 0.5;
+            }
+
+            if (Math.abs(finalVSpeed) < maxVSpeed && Math.abs(finalHSpeed) < maxHSpeed && finalAngle < maxAngle) {
                 // SUCCESS
                 gameState.view = 'surface';
+                
+                // Create landing particle effect
+                createLandingParticles($solarMap.width / 2, $solarMap.height - 50);
+                soundManager.play('landing');
+                
+                // Check for achievements
+                if (gameState.achievements.length === 0) {
+                    unlockAchievement('first_landing');
+                }
+                if (gameState.landerFuel > 80) {
+                    unlockAchievement('perfect_landing');
+                }
+                
+                // Award points for successful landing (bonus for difficult conditions)
+                let landingBonus = 50;
+                if (atmosphericEntry) landingBonus += 25;
+                if (planetData.gravity > 1.0) landingBonus += 25;
+                if (planetData.surfaceTemp < -100 || planetData.surfaceTemp > 100) landingBonus += 15;
+                
+                gameState.score += landingBonus;
+                showNotification('🎯 Landing Bonus', `+${landingBonus} points for planetary conditions!`, '#00ff88');
+                
+                // Check mission progress
+                checkMissionProgress('land', gameState.landedPlanet);
+                
             } else {
                 // CRASH!
                 const crashMessage = { 
                     theme: 'bg-gradient-to-br from-red-900 to-black', 
                     title: 'CRITICAL FAILURE - CRASH', 
-                    text: `You hit the surface with a vertical speed of **${Math.abs(finalVSpeed).toFixed(2)} m/s** and horizontal speed of **${Math.abs(finalHSpeed).toFixed(2)} m/s**. Maximum safe vertical speed is 3 m/s and horizontal is 1 m/s. The mission is a failure.`, 
-                    activity: 'Initiate rescue beacon and wait for extraction.',
+                    text: `Landing failed on ${gameState.landedPlanet}. Impact: V=${Math.abs(finalVSpeed).toFixed(1)}m/s, H=${Math.abs(finalHSpeed).toFixed(1)}m/s. Limits: V<${maxVSpeed}m/s, H<${maxHSpeed}m/s.`, 
+                    activity: 'Emergency rescue protocols activated.',
                     color: '#600'
                 };
                 // Override surface scenario with crash data
@@ -1079,11 +3391,34 @@
         }
         
         // Apply air resistance/braking force to horizontal speed
-        gameState.landerHSpeed *= 0.995;
+        const dragFactor = atmosphericEntry ? (0.99 - entryDifficulty * 0.001) : 0.995;
+        gameState.landerHSpeed *= dragFactor;
         
         // Keep angle and fuel within bounds
         gameState.landerFuel = Math.max(0, gameState.landerFuel);
         gameState.landerAngle = Math.max(-0.5, Math.min(0.5, landerAngle));
+    }
+    
+    function createHeatTrailParticles() {
+        // Create heat trail effect during atmospheric entry
+        const shipX = $solarMap.width / 2;
+        const shipY = Math.min($solarMap.height * 0.5, 200);
+        
+        for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 3 + 2;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            
+            const colors = ['#ff6600', '#ff9900', '#ffcc00', '#ffffff'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            gameState.particles.push(new Particle(
+                shipX + (Math.random() - 0.5) * 20,
+                shipY + 20,
+                vx, vy, color, 20, Math.random() * 4 + 2
+            ));
+        }
     }
 
     function drawLanderMinigame() {
@@ -1197,6 +3532,11 @@
         $hudVelocity.textContent = speed.toFixed(2);
         $hudOrientation.textContent = orientation.toFixed(0);
         
+        // Update new HUD elements
+        $hudFuel.textContent = Math.max(0, Math.floor(gameState.shipFuel));
+        $hudFuel.style.color = gameState.shipFuel < 100 ? '#FF4444' : '#00ffc7';
+        $hudScore.textContent = gameState.score;
+        
         // Update view mode
         let viewModeText;
         if (gameState.view === 'map') viewModeText = 'Map View';
@@ -1220,12 +3560,15 @@
     }
 
     function gameLoop() {
+        gameState.time++; // Increment game time for animations
+        
         if (gameState.view === 'landing') {
             updateLanderPhysics();
             drawLanderMinigame();
         } else if (gameState.view === 'map') {
             updatePlanets();
             handleSteering();
+            updateParticles(); // Update particle effects
             drawMap();
             checkBlackHoleCollision();
             checkExitGateCollision();
@@ -1242,7 +3585,9 @@
     
     // Start Game
     initializeSystem(NORMAL_PLANETS, 'Earth Orbit');
+    initializeMissions();
     gameLoop();
 </script>
 </body>
+</html>
 </html>
