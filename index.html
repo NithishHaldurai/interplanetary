@@ -397,6 +397,23 @@
         time: 0, // Game time for animations
         score: 0, // Player score
         weatherEvents: [], // Dynamic weather/hazards
+        
+        // NEW RESOURCE SYSTEM
+        resources: {
+            FUEL: 1000,
+            OXYGEN: 100,
+            POWER: 100,
+            SUPPLIES: 100
+        },
+        resourceConsumption: {
+            FUEL: 0.5,
+            OXYGEN: 0.01,
+            POWER: 0.02,
+            SUPPLIES: 0.001
+        },
+        cargo: {},
+        credits: 1000,
+        cargoCapacity: 100
     };
 
     // Black Hole Data
@@ -429,6 +446,38 @@
     
     // Keyboard Input State
     const keys = { W: false, A: false, S: false, D: false, L: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
+
+    // NEW: Resource Types
+    const RESOURCE_TYPES = {
+        FUEL: { name: 'Hydrogen Fuel', color: '#00ffc7', max: 2000 },
+        OXYGEN: { name: 'Life Support', color: '#00aaff', max: 100 },
+        POWER: { name: 'Energy', color: '#ffff00', max: 100 },
+        SUPPLIES: { name: 'Supplies', color: '#ffaa00', max: 100 }
+    };
+
+    // NEW: Ship Types
+    const SHIP_TYPES = {
+        EXPLORER: { thrust: 0.15, turnRate: 0.05, fuelCapacity: 2000, cargo: 50 },
+        HAULER: { thrust: 0.1, turnRate: 0.03, fuelCapacity: 3000, cargo: 150 },
+        RACER: { thrust: 0.25, turnRate: 0.08, fuelCapacity: 1200, cargo: 20 }
+    };
+
+    // NEW: Navigation System
+    const NAVIGATION_FEATURES = {
+        autoPilot: false,
+        waypoints: [],
+        courseCorrection: true
+    };
+
+    // NEW: Trading System
+    const COMMODITY_PRICES = {
+        'Lunar Regolith': { buy: 10, sell: 15 },
+        'Martian Soil': { buy: 25, sell: 35 },
+        'Venusian Atmosphere': { buy: 50, sell: 70 },
+        'Ice Samples': { buy: 15, sell: 22 },
+        'Crystal Shards': { buy: 100, sell: 150 },
+        'Plasma Energy': { buy: 200, sell: 300 }
+    };
 
     // Planet-specific surface data with scientific grounding and enhanced realism
     const SURFACE_SCENARIOS = {
@@ -994,6 +1043,166 @@
                 showNotification('🆕 New Mission', nextMission.title, '#ffaa00');
             }
         });
+    }
+
+    // --- NEW FEATURE: MISSING FUNCTION FIXES ---
+
+    function getClosestLandablePlanet() {
+        const closestBody = getClosestCelestialBody();
+        if (!closestBody) return null;
+        
+        const planetData = closestBody.loc;
+        const landingCheck = canAttemptLanding(planetData);
+        
+        return landingCheck.possible ? closestBody : null;
+    }
+
+    function landOnPlanet(planetName) {
+        attemptLanding(planetName);
+    }
+
+    // --- NEW FEATURE: RESOURCE MANAGEMENT ---
+
+    function initializeResources() {
+        // Initialize cargo with all commodity types
+        gameState.cargo = {};
+        Object.keys(COMMODITY_PRICES).forEach(item => {
+            gameState.cargo[item] = 0;
+        });
+    }
+
+    function consumeResources(deltaTime) {
+        if (gameState.view === 'map') {
+            gameState.resources.OXYGEN -= gameState.resourceConsumption.OXYGEN * deltaTime;
+            gameState.resources.POWER -= gameState.resourceConsumption.POWER * deltaTime;
+            gameState.resources.SUPPLIES -= gameState.resourceConsumption.SUPPLIES * deltaTime;
+            
+            Object.keys(gameState.resources).forEach(resource => {
+                if (gameState.resources[resource] <= 0) {
+                    handleResourceDepletion(resource);
+                }
+            });
+        }
+    }
+
+    function handleResourceDepletion(resource) {
+        showNotification('⚠️ CRITICAL', `${RESOURCE_TYPES[resource].name} depleted!`, '#ff4444');
+        // Add consequences like damage or game over
+    }
+
+    // --- NEW FEATURE: TRADING SYSTEM ---
+
+    function collectSample(planetName, sampleType) {
+        const planetData = SOLAR_SYSTEM[planetName];
+        if (!planetData) return;
+        
+        if (Math.random() < 0.7) {
+            gameState.cargo[sampleType] = (gameState.cargo[sampleType] || 0) + 1;
+            showNotification('🔬 Sample Collected', `Acquired ${sampleType}`, '#00ff88');
+        }
+    }
+
+    // --- NEW FEATURE: NAVIGATION SYSTEM ---
+
+    function addWaypoint(targetName) {
+        const target = SOLAR_SYSTEM[targetName];
+        if (target) {
+            NAVIGATION_FEATURES.waypoints.push({
+                name: targetName,
+                x: target.x,
+                y: target.y,
+                reached: false
+            });
+            showNotification('📍 Waypoint Set', `Navigating to ${targetName}`, '#00ffc7');
+        }
+    }
+
+    function calculateInterceptCourse(targetName) {
+        const target = SOLAR_SYSTEM[targetName];
+        if (!target) return null;
+        
+        const shipX = $solarMap.width / 2;
+        const shipY = $solarMap.height / 2;
+        const targetX = target.x + mapOffsetX;
+        const targetY = target.y + mapOffsetY;
+        
+        const dx = targetX - shipX;
+        const dy = targetY - shipY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        return {
+            angle: Math.atan2(dy, dx),
+            distance: distance,
+            estimatedTime: distance / Math.max(0.1, Math.sqrt(gameState.shipVelocityX**2 + gameState.shipVelocityY**2))
+        };
+    }
+
+    // --- NEW FEATURE: SHIP CUSTOMIZATION ---
+
+    function upgradeShip(shipType) {
+        const specs = SHIP_TYPES[shipType];
+        gameState.shipThrust = specs.thrust;
+        gameState.shipTurnRate = specs.turnRate;
+        gameState.shipMaxFuel = specs.fuelCapacity;
+        gameState.cargoCapacity = specs.cargo;
+        
+        showNotification('🚀 Ship Upgraded', `Now using ${shipType} configuration`, '#00ffc7');
+    }
+
+    // --- NEW FEATURE: DYNAMIC MISSIONS ---
+
+    function generateDynamicMission() {
+        const missionTypes = ['RESCUE', 'DELIVERY', 'EXPLORATION', 'RESEARCH', 'MINING'];
+        const availablePlanets = Object.keys(SOLAR_SYSTEM).filter(name => 
+            SOLAR_SYSTEM[name].landable
+        );
+        
+        if (availablePlanets.length === 0) return null;
+        
+        const missionType = missionTypes[Math.floor(Math.random() * missionTypes.length)];
+        const targetPlanet = availablePlanets[Math.floor(Math.random() * availablePlanets.length)];
+        
+        return {
+            id: 'dynamic_' + Date.now(),
+            type: missionType,
+            title: `${missionType} Mission to ${targetPlanet}`,
+            description: `Travel to ${targetPlanet} and complete the ${missionType.toLowerCase()} operation.`,
+            target: targetPlanet,
+            reward: {
+                credits: Math.floor(Math.random() * 500) + 100,
+                reputation: Math.floor(Math.random() * 50) + 10
+            },
+            timeLimit: Date.now() + (3600000 * 2) // 2 hours
+        };
+    }
+
+    // --- NEW FEATURE: SAVE/LOAD SYSTEM ---
+
+    function quickSave() {
+        const saveData = {
+            location: gameState.location,
+            systemName: gameState.systemName,
+            shipFuel: gameState.shipFuel,
+            score: gameState.score,
+            resources: gameState.resources,
+            cargo: gameState.cargo,
+            achievements: gameState.achievements,
+            missionObjectives: gameState.missionObjectives,
+            credits: gameState.credits,
+            timestamp: Date.now()
+        };
+        
+        localStorage.setItem('spaceExplorer_save', JSON.stringify(saveData));
+        showNotification('💾 Game Saved', 'Progress saved successfully', '#00ff88');
+    }
+
+    function quickLoad() {
+        const saveData = localStorage.getItem('spaceExplorer_save');
+        if (saveData) {
+            const loaded = JSON.parse(saveData);
+            Object.assign(gameState, loaded);
+            showNotification('🔄 Game Loaded', 'Previous progress restored', '#00ff88');
+        }
     }
 
     // --- SYSTEM DEFINITIONS ---
@@ -3076,6 +3285,15 @@
             }
             keys[key] = true;
             if (e.key.includes('Arrow')) e.preventDefault();
+            
+            // NEW: Save/Load shortcuts
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                quickSave();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                quickLoad();
+            }
         }
     });
 
@@ -3143,6 +3361,9 @@
         ctx.clearRect(0, 0, $solarMap.width, $solarMap.height);
         ctx.fillStyle = 'rgba(8, 10, 17, 0.5)'; // Dark background (handled mostly by CSS radial-gradient)
         ctx.fillRect(0, 0, $solarMap.width, $solarMap.height);
+
+        // NEW: Draw Nebulae
+        drawNebulae();
 
         // Draw Stars (Parallax effect)
         drawStars();
@@ -3220,6 +3441,30 @@
             ctx.textAlign = 'center';
             ctx.fillText(name.replace(' Orbit', ''), drawX, drawY - loc.radius - 5);
         }
+    }
+
+    // NEW: Draw Nebulae function
+    function drawNebulae() {
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = '#330066';
+        ctx.beginPath();
+        ctx.arc(
+            $solarMap.width * 0.3 + mapOffsetX * 0.1,
+            $solarMap.height * 0.7 + mapOffsetY * 0.1,
+            300, 0, Math.PI * 2
+        );
+        ctx.fill();
+        
+        ctx.fillStyle = '#006633';
+        ctx.beginPath();
+        ctx.arc(
+            $solarMap.width * 0.8 + mapOffsetX * 0.05,
+            $solarMap.height * 0.2 + mapOffsetY * 0.05,
+            250, 0, Math.PI * 2
+        );
+        ctx.fill();
+        
+        ctx.globalAlpha = 1;
     }
 
     function updatePlanets() {
@@ -3532,10 +3777,10 @@
         $hudVelocity.textContent = speed.toFixed(2);
         $hudOrientation.textContent = orientation.toFixed(0);
         
-        // Update new HUD elements
-        $hudFuel.textContent = Math.max(0, Math.floor(gameState.shipFuel));
+        // UPDATE: Show resources in HUD
+        $hudFuel.textContent = `${Math.max(0, Math.floor(gameState.shipFuel))} | O₂:${Math.floor(gameState.resources.OXYGEN)}`;
         $hudFuel.style.color = gameState.shipFuel < 100 ? '#FF4444' : '#00ffc7';
-        $hudScore.textContent = gameState.score;
+        $hudScore.textContent = `${gameState.score} | $${gameState.credits}`;
         
         // Update view mode
         let viewModeText;
@@ -3562,6 +3807,9 @@
     function gameLoop() {
         gameState.time++; // Increment game time for animations
         
+        // NEW: Consume resources over time
+        consumeResources(0.016); // Assuming 60fps
+        
         if (gameState.view === 'landing') {
             updateLanderPhysics();
             drawLanderMinigame();
@@ -3586,8 +3834,8 @@
     // Start Game
     initializeSystem(NORMAL_PLANETS, 'Earth Orbit');
     initializeMissions();
+    initializeResources(); // NEW: Initialize resource system
     gameLoop();
 </script>
 </body>
-</html>
 </html>
