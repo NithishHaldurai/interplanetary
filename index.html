@@ -59,22 +59,58 @@
         }
 
         /* Black Hole Event Horizon - Visible and Highlighted */
-        #black-hole {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: radial-gradient(circle at center, rgba(0,0,0,1) 0%, rgba(5,0,20,1) 70%, rgba(20,0,50,0) 100%);
-            box-shadow: 
-                0 0 50px rgba(255, 0, 200, 0.7), /* Magenta/Purple Outer Glow */
-                0 0 100px rgba(0, 0, 0, 0.5) inset; 
-            z-index: 1; 
-            pointer-events: none;
-            top: -100px;
-            left: -100px;
-            transition: opacity 0.3s;
-        }
-
+       /* ...existing code... */
+#black-hole {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    z-index: 1;
+    pointer-events: none;
+    top: -100px;
+    left: -100px;
+    transition: opacity 0.3s;
+    /* Realistic black hole core */
+    background: radial-gradient(circle at 50% 50%, 
+        #000 0%, 
+        #222 30%, 
+        rgba(0,0,0,0.8) 45%, 
+        transparent 70%);
+    box-shadow:
+        0 0 60px 30px #000,
+        0 0 120px 40px #3a1a4d inset;
+    overflow: visible;
+}
+#black-hole .accretion-disk {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 180px; height: 60px;
+    transform: translate(-50%, -50%) rotate(0deg);
+    border-radius: 50%;
+    background: linear-gradient(90deg, 
+        rgba(255, 220, 100, 0.7) 0%, 
+        rgba(255, 120, 0, 0.5) 40%, 
+        rgba(80, 0, 80, 0.3) 100%);
+    box-shadow: 0 0 60px 20px #ffae00, 0 0 80px 40px #ffae00 inset;
+    opacity: 0.7;
+    animation: accretion-spin 6s linear infinite;
+    pointer-events: none;
+}
+@keyframes accretion-spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg);}
+    100% { transform: translate(-50%, -50%) rotate(360deg);}
+}
+#black-hole .event-horizon {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 120px; height: 120px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 40px 10px #161313, 0 0 80px 30px #070707 inset;
+    pointer-events: none;
+}
+/* ...existing code... */
         /* Message Box for Landing Prompt */
         #message-box {
             position: absolute;
@@ -334,8 +370,52 @@
     </div>
     <div id="map-area">
         <canvas id="solar-map"></canvas>
-        <div id="black-hole"></div>
-        <div id="spaceship" title="Your Controllable Ship">🚀</div>
+        <!-- ...existing code... -->
+<div id="black-hole">
+    <div class="accretion-disk"></div>
+    <div class="event-horizon"></div>
+</div>
+<!-- ...existing code... -->
+        <!-- ...existing code... -->
+     
+      <!-- ...existing code... -->
+<div id="spaceship" title="Aeroplane-Inspired Spaceship">
+    <svg width="40" height="40" viewBox="0 0 60 60">
+        <defs>
+            <!-- Fuselage gradient -->
+            <linearGradient id="fuselageGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="10%" stop-color="white"/>
+                <stop offset="100%" stop-color="white"/>
+            </linearGradient>
+            <!-- Wing gradient -->
+            <linearGradient id="wingGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="10%" stop-color="white"/>
+                <stop offset="100%" stop-color="wheat"/>
+            </linearGradient>
+            <!-- Cockpit gradient -->
+            <radialGradient id="cockpitGradient" cx="70%" cy="70%" r="70%">
+                <stop offset="0%" stop-color="#fff"/>
+                <stop offset="100%" stop-color="#60a5fa"/>
+            </radialGradient>
+        </defs>
+        <!-- Main fuselage -->
+        <rect x="26" y="10" width="8" height="32" rx="4" fill="url(#fuselageGradient)" stroke="#374151" stroke-width="1"/>
+        <!-- Left wing -->
+        <polygon points="30,22 8,32 30,32" fill="url(#wingGradient)" stroke="#374151" stroke-width="1"/>
+        <!-- Right wing -->
+        <polygon points="30,22 52,32 30,32" fill="url(#wingGradient)" stroke="#374151" stroke-width="1"/>
+        <!-- Tail fin -->
+        <polygon points="30,10 34,18 26,18" fill="#374151" stroke="#374151" stroke-width="1"/>
+        <!-- Cockpit dome -->
+        <ellipse cx="30" cy="16" rx="4" ry="3" fill="url(#cockpitGradient)" stroke="#60a5fa" stroke-width="1"/>
+        <!-- Engine exhaust (subtle glow) -->
+        <ellipse cx="30" cy="42" rx="3" ry="1.5" fill="#ffe600" opacity="0.3"/>
+    </svg>
+</div>
+<!-- ...existing code... -->
+        
+<!-- ...existing code... -->
+<!-- ...existing code... -->
         <div id="message-box"></div>
         
         <div id="surface-view" class="hidden">
@@ -1728,6 +1808,11 @@
         gameState.shipVelocityX = 0;
         gameState.shipVelocityY = 0;
         
+        //
+        mapOffsetX = 0;
+        mapOffsetY = 0;
+        
+
         // Clear particles for smooth transition
         gameState.particles = [];
         
@@ -3177,12 +3262,16 @@
             const { landerThrust, landerFuel, landerAngle } = gameState;
 
             // Rotation (A/D or ArrowLeft/Right for tilt)
-            if (keys.A || keys.ArrowLeft) {
-                gameState.landerAngle = Math.max(-0.5, landerAngle - 0.02);
-            }
-            if (keys.D || keys.ArrowRight) {
-                gameState.landerAngle = Math.min(0.5, landerAngle + 0.02);
-            }
+          // ...existing code...
+// Rotation
+if (keys.A || keys.ArrowLeft) {
+    gameState.shipAngle -= shipTurnRate;
+}
+if (keys.D || keys.ArrowRight) {
+    gameState.shipAngle += shipTurnRate;
+}
+$spaceship.style.transform = `translate(-50%, -50%) rotate(${gameState.shipAngle * (180 / Math.PI) + 90}deg)`;
+// ...existing code...
 
             // Thrust (W/ArrowUp)
             if ((keys.W || keys.ArrowUp) && landerFuel > 0) {
@@ -3373,6 +3462,9 @@
 
         // Draw particle effects
         drawParticles();
+
+        //
+        drawAsteroids();
 
         // Draw Planets, Orbits, and update their positions
         for (const name in SOLAR_SYSTEM) {
@@ -3804,6 +3896,103 @@
         if (gameState.view === 'map') drawMap();
     }
 
+
+
+    // ...existing code...
+
+// --- ASTEROID & METEOR SYSTEM ---
+
+gameState.asteroids = [];
+
+function spawnAsteroid() {
+    // Spawn at random edge, move toward center
+    const edge = Math.floor(Math.random() * 4);
+    let x, y, vx, vy;
+    const speed = Math.random() * 2 + 1;
+    switch (edge) {
+        case 0: // Top
+            x = Math.random() * $solarMap.width;
+            y = -30;
+            vx = (Math.random() - 0.5) * 1;
+            vy = speed;
+            break;
+        case 1: // Bottom
+            x = Math.random() * $solarMap.width;
+            y = $solarMap.height + 30;
+            vx = (Math.random() - 0.5) * 1;
+            vy = -speed;
+            break;
+        case 2: // Left
+            x = -30;
+            y = Math.random() * $solarMap.height;
+            vx = speed;
+            vy = (Math.random() - 0.5) * 1;
+            break;
+        case 3: // Right
+            x = $solarMap.width + 30;
+            y = Math.random() * $solarMap.height;
+            vx = -speed;
+            vy = (Math.random() - 0.5) * 1;
+            break;
+    }
+    gameState.asteroids.push({
+        x, y, vx, vy,
+        radius: Math.random() * 4 + 3,
+        type: Math.random() < 0.7 ? 'asteroid' : 'meteor',
+        color: Math.random() < 0.7 ? '#888' : '#ff8800'
+    });
+}
+
+
+
+function updateAsteroids() {
+    for (let i = gameState.asteroids.length - 1; i >= 0; i--) {
+        const a = gameState.asteroids[i];
+        a.x += a.vx;
+        a.y += a.vy;
+        // Remove if out of bounds
+        if (a.x < -40 || a.x > $solarMap.width + 40 || a.y < -40 || a.y > $solarMap.height + 40) {
+            gameState.asteroids.splice(i, 1);
+        }
+    }
+    // Spawn new asteroid randomly
+    if (Math.random() < 0.000002 && gameState.view === 'map') spawnAsteroid();
+}
+
+function drawAsteroids() {
+    gameState.asteroids.forEach(a => {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 2);
+        ctx.fillStyle = a.color;
+        ctx.shadowColor = a.type === 'meteor' ? '#ff8800' : '#888';
+        ctx.shadowBlur = a.type === 'meteor' ? 10 : 0;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    });
+}
+
+function checkAsteroidCollision() {
+    // Spaceship is always at center of canvas in map view
+    const shipX = $solarMap.width / 2;
+    const shipY = $solarMap.height / 2;
+    const shipRadius = 15; // Approximate
+
+    gameState.asteroids.forEach(a => {
+        const dx = a.x - shipX;
+        const dy = a.y - shipY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < a.radius + shipRadius) {
+            // COLLISION!
+            showNotification('💥 COLLISION', 'Your spaceship was hit by an asteroid!', '#ff4444');
+            gameState.shipFuel = Math.max(0, gameState.shipFuel - 200);
+            gameState.score = Math.max(0, gameState.score - 100);
+            gameState.asteroids = []; // Clear asteroids
+            // Optional: Add collapse effect or reset ship position
+        }
+    });
+}
+// ...existing code...
+
     function gameLoop() {
         gameState.time++; // Increment game time for animations
         
@@ -3817,6 +4006,10 @@
             updatePlanets();
             handleSteering();
             updateParticles(); // Update particle effects
+            
+            updateAsteroids();
+            checkAsteroidCollision();
+            
             drawMap();
             checkBlackHoleCollision();
             checkExitGateCollision();
@@ -3829,13 +4022,26 @@
 
     // --- INITIALIZATION ---
 
-    window.addEventListener('resize', resizeCanvas);
-    
+   // ...existing code...
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(resizeCanvas, 100);
+    });
+// ...existing code...
     // Start Game
     initializeSystem(NORMAL_PLANETS, 'Earth Orbit');
     initializeMissions();
     initializeResources(); // NEW: Initialize resource system
+
     gameLoop();
+    
+    updateAsteroids();
+checkAsteroidCollision();
+
+// In drawMap(), after drawParticles():
+//drawAsteroids();
+
 </script>
 </body>
 </html>
