@@ -41,21 +41,51 @@
             transition: opacity 0.5s; /* Smooth transition when landing */
         }
 
-        /* Spaceship (The controllable element) */
+        /* Spaceship (Interstellar Style) */
         #spaceship {
             position: absolute;
-            width: 30px; 
-            height: 30px;
+            width: 50px; 
+            height: 50px;
             z-index: 10;
-            font-size: 30px;
-            line-height: 30px;
             text-align: center;
-            filter: drop-shadow(0 0 8px #00ffc7) drop-shadow(0 0 2px #d1e2ff); 
+            filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 0 4px #0066ff); 
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(0deg); 
             transition: transform 0.05s linear; 
             pointer-events: none; 
+        }
+        
+        /* Rotation animation for the ship's sections */
+        #rotating-sections {
+            animation: rotate 8s linear infinite;
+            transform-origin: center;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Engine glow animation */
+        .engine-glow {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        /* Landed ship rotation */
+        .rotating-sections-landed {
+            animation: rotate 12s linear infinite;
+            transform-origin: center;
+        }
+
+        .landing-site {
+            filter: drop-shadow(0 0 8px #00ffff);
         }
 
         /* Black Hole Event Horizon - Visible and Highlighted */
@@ -379,37 +409,51 @@
         <!-- ...existing code... -->
      
       <!-- ...existing code... -->
-<div id="spaceship" title="Aeroplane-Inspired Spaceship">
-    <svg width="40" height="40" viewBox="0 0 60 60">
+<div id="spaceship" title="Interstellar Ranger Spacecraft">
+    <svg width="50" height="50" viewBox="0 0 100 100">
         <defs>
-            <!-- Fuselage gradient -->
-            <linearGradient id="fuselageGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="10%" stop-color="white"/>
-                <stop offset="100%" stop-color="white"/>
+            <!-- Metal gradient -->
+            <linearGradient id="metalGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#e0e0e0"/>
+                <stop offset="50%" stop-color="#ffffff"/>
+                <stop offset="100%" stop-color="#c0c0c0"/>
             </linearGradient>
-            <!-- Wing gradient -->
-            <linearGradient id="wingGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="10%" stop-color="white"/>
-                <stop offset="100%" stop-color="wheat"/>
-            </linearGradient>
-            <!-- Cockpit gradient -->
-            <radialGradient id="cockpitGradient" cx="70%" cy="70%" r="70%">
-                <stop offset="0%" stop-color="#fff"/>
-                <stop offset="100%" stop-color="#60a5fa"/>
+            <!-- Engine glow -->
+            <radialGradient id="engineGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00ffff"/>
+                <stop offset="100%" stop-color="#0066ff"/>
             </radialGradient>
+            <!-- Window gradient -->
+            <linearGradient id="windowGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#001f3f"/>
+                <stop offset="100%" stop-color="#003366"/>
+            </linearGradient>
         </defs>
-        <!-- Main fuselage -->
-        <rect x="26" y="10" width="8" height="32" rx="4" fill="url(#fuselageGradient)" stroke="#374151" stroke-width="1"/>
-        <!-- Left wing -->
-        <polygon points="30,22 8,32 30,32" fill="url(#wingGradient)" stroke="#374151" stroke-width="1"/>
-        <!-- Right wing -->
-        <polygon points="30,22 52,32 30,32" fill="url(#wingGradient)" stroke="#374151" stroke-width="1"/>
-        <!-- Tail fin -->
-        <polygon points="30,10 34,18 26,18" fill="#374151" stroke="#374151" stroke-width="1"/>
-        <!-- Cockpit dome -->
-        <ellipse cx="30" cy="16" rx="4" ry="3" fill="url(#cockpitGradient)" stroke="#60a5fa" stroke-width="1"/>
-        <!-- Engine exhaust (subtle glow) -->
-        <ellipse cx="30" cy="42" rx="3" ry="1.5" fill="#ffe600" opacity="0.3"/>
+
+        <!-- Central Hub -->
+        <circle cx="50" cy="50" r="15" fill="url(#metalGradient)" stroke="#666666" stroke-width="2"/>
+        
+        <!-- Rotating Sections (4 segments) -->
+        <g id="rotating-sections">
+            <!-- Section 1 -->
+            <rect x="20" y="45" width="60" height="10" fill="url(#metalGradient)" stroke="#666666" stroke-width="1"/>
+            <!-- Section 2 -->
+            <rect x="45" y="20" width="10" height="60" fill="url(#metalGradient)" stroke="#666666" stroke-width="1"/>
+            
+            <!-- Corner Pods -->
+            <circle cx="20" cy="45" r="5" fill="url(#metalGradient)" stroke="#666666" stroke-width="1"/>
+            <circle cx="80" cy="45" r="5" fill="url(#metalGradient)" stroke="#666666" stroke-width="1"/>
+            <circle cx="45" cy="20" r="5" fill="url(#metalGradient)" stroke="#666666" stroke-width="1"/>
+            <circle cx="45" cy="80" r="5" fill="url(#metalGradient)" stroke="#666666" stroke-width="1"/>
+        </g>
+
+        <!-- Central Window -->
+        <circle cx="50" cy="50" r="8" fill="url(#windowGradient)" stroke="#00ffff" stroke-width="1"/>
+        
+        <!-- Engine Glow -->
+        <circle cx="50" cy="80" r="6" fill="url(#engineGlow)" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;0.3;0.7" dur="1s" repeatCount="indefinite"/>
+        </circle>
     </svg>
 </div>
 <!-- ...existing code... -->
@@ -744,16 +788,28 @@
             gravity: 0.6,
             color: '#FF69B4'
         },
-        'Storm Giant': {
-            theme: 'bg-gradient-to-br from-purple-700 to-blue-900',
-            title: 'Storm Giant - Floating City',
-            text: "You've landed on a massive floating platform in the endless storm clouds. Lightning illuminates the turbulent atmosphere.",
+        'Storm Giant': { 
+            theme: 'bg-gradient-to-br from-purple-700 to-blue-900', 
+            title: 'Storm Giant - Floating City', 
+            text: "You've landed on a massive floating platform in the endless storm clouds. Lightning illuminates the turbulent atmosphere.", 
             activity: 'Navigate storm systems and study atmospheric dynamics.',
             gravity: 2.8,
             color: '#9966CC'
         },
-        
-        // Updated scenarios for previously impossible planets
+        'Arrakis': {
+            theme: 'bg-gradient-to-br from-amber-600 to-yellow-900',
+            title: 'Arrakis - Desert Planet',
+            text: "The vast desert stretches endlessly in all directions. The air shimmers with heat, and the spice melange gives the atmosphere its characteristic cinnamon scent. **Warning: Sandworm activity detected in this region.**",
+            activity: 'Survey spice fields and watch for wormsign.',
+            gravity: 0.9,
+            color: '#D2691E',
+            special: {
+                hasSpice: true,
+                hasSandworms: true,
+                atmosphereType: 'spice_laden',
+                hazardLevel: 'high'
+            }
+        },        // Updated scenarios for previously impossible planets
         'The Sun': {
             theme: 'bg-gradient-to-br from-yellow-300 to-orange-600',
             title: 'Solar Corona Station',
@@ -928,22 +984,34 @@
         
         // Create particles behind the ship
         const angle = gameState.shipAngle + Math.PI; // Opposite direction
-        const spread = 0.3;
+        const spread = 0.2; // Tighter spread for more focused thrust
         
-        for (let i = 0; i < 3; i++) {
+        // Create more particles for a denser effect
+        for (let i = 0; i < 5; i++) {
             const particleAngle = angle + (Math.random() - 0.5) * spread;
-            const speed = Math.random() * 2 + 1;
+            const speed = Math.random() * 3 + 2;
             const vx = Math.cos(particleAngle) * speed;
             const vy = Math.sin(particleAngle) * speed;
             
-            const colors = ['#00ffc7', '#00ccaa', '#0099ff', '#ffffff'];
+            // Interstellar-style blue energy colors
+            const colors = ['#00ffff', '#0066ff', '#003366', '#ffffff'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             
+            // Create main thrust particle
             gameState.particles.push(new Particle(
-                shipX + Math.cos(angle) * 15,
-                shipY + Math.sin(angle) * 15,
-                vx, vy, color, 30, Math.random() * 3 + 1
+                shipX + Math.cos(angle) * 25,
+                shipY + Math.sin(angle) * 25,
+                vx, vy, color, 40, Math.random() * 4 + 2
             ));
+            
+            // Add some smaller particles for detail
+            if (Math.random() < 0.5) {
+                gameState.particles.push(new Particle(
+                    shipX + Math.cos(angle) * 20 + (Math.random() - 0.5) * 10,
+                    shipY + Math.sin(angle) * 20 + (Math.random() - 0.5) * 10,
+                    vx * 0.5, vy * 0.5, '#ffffff', 20, Math.random() * 2 + 0.5
+                ));
+            }
         }
     }
     
@@ -1149,6 +1217,27 @@
         Object.keys(COMMODITY_PRICES).forEach(item => {
             gameState.cargo[item] = 0;
         });
+
+        // Initialize or reset all resources to starting values
+        gameState.resources = {
+            FUEL: 1000,
+            OXYGEN: 100,
+            POWER: 100,
+            SUPPLIES: 100
+        };
+
+        // Initialize or reset resource consumption rates
+        gameState.resourceConsumption = {
+            FUEL: 0.5,    // Units per second when thrusting
+            OXYGEN: 0.01, // Units per second
+            POWER: 0.02,  // Units per second
+            SUPPLIES: 0.001 // Units per second
+        };
+
+        // Initialize or reset other game state values
+        gameState.credits = 1000;
+        gameState.cargoCapacity = 100;
+        gameState.shipFuel = 1000;
     }
 
     function consumeResources(deltaTime) {
@@ -1165,10 +1254,18 @@
         }
     }
 
-    function handleResourceDepletion(resource) {
-        showNotification('⚠️ CRITICAL', `${RESOURCE_TYPES[resource].name} depleted!`, '#ff4444');
         // Add consequences like damage or game over
-    }
+
+   
+    // Add other consequences if needed
+
+     function handleResourceDepletion(resource) {
+    showNotification('⚠️ CRITICAL', `${RESOURCE_TYPES[resource].name} depleted!`, '#ff4444');
+    if (resource === 'FUEL') {
+        console.log('Game Over')
+        gameOver();
+    }   
+}
 
     // --- NEW FEATURE: TRADING SYSTEM ---
 
@@ -1575,6 +1672,25 @@
             landingType: 'impossible',
             surfaceTemp: 8000,
             atmosphere: 'plasma'
+        },
+        'Arrakis': {
+            type: 'terrestrial',
+            radius: 15,
+            parent: 'Diamond Star',
+            orbitRadius: 400,
+            orbitSpeed: 0.003,
+            initialAngle: 120,
+            color: '#D2691E', // Desert brown color
+            landable: true,
+            landingType: 'desert',
+            gravity: 0.9,
+            atmosphere: 'spice_laden', // Special Dune atmosphere
+            surfaceTemp: 45, // Average in Celsius
+            pressure: 0.8,
+            hasMagneticField: true,
+            spiceFields: true, // Special Dune feature
+            sandworms: true, // Special Dune feature
+            rings: { inner: 20, outer: 30, color: '#8B4513' } // Dust/spice rings
         }, 
         'Diamond Planet': { 
             type: 'terrestrial', 
@@ -2552,21 +2668,57 @@
                 <!-- Atmospheric Effects -->
                 <div class="atmosphere-effects" id="atmosphere-effects"></div>
                 
-                <!-- Landing Site Marker -->
-                <div class="landing-site" style="
-                    position: absolute;
-                    bottom: 30%;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 40px;
-                    height: 40px;
-                    color: #00ffc7;
-                    font-size: 30px;
-                    filter: drop-shadow(0 0 10px #00ffc7);
-                    z-index: 10;
-                ">🚀</div>
+        <!-- Landing Site Marker -->
+        <div class="landing-site" style="
+            position: absolute;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            z-index: 10;
+        ">
+            <svg width="50" height="50" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="metalGradientLander" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#e0e0e0"/>
+                        <stop offset="50%" stop-color="#ffffff"/>
+                        <stop offset="100%" stop-color="#c0c0c0"/>
+                    </linearGradient>
+                    <radialGradient id="engineGlowLander" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#00ffff"/>
+                        <stop offset="100%" stop-color="#0066ff"/>
+                    </radialGradient>
+                    <linearGradient id="windowGradientLander" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#001f3f"/>
+                        <stop offset="100%" stop-color="#003366"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- Central Hub -->
+                <circle cx="50" cy="50" r="15" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="2"/>
                 
-                <!-- Minimal HUD Overlay -->
+                <!-- Rotating Sections -->
+                <g class="rotating-sections-landed">
+                    <rect x="20" y="45" width="60" height="10" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="1"/>
+                    <rect x="45" y="20" width="10" height="60" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="1"/>
+                    
+                    <!-- Corner Pods -->
+                    <circle cx="20" cy="45" r="5" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="1"/>
+                    <circle cx="80" cy="45" r="5" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="1"/>
+                    <circle cx="45" cy="20" r="5" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="1"/>
+                    <circle cx="45" cy="80" r="5" fill="url(#metalGradientLander)" stroke="#666666" stroke-width="1"/>
+                </g>
+
+                <!-- Central Window -->
+                <circle cx="50" cy="50" r="8" fill="url(#windowGradientLander)" stroke="#00ffff" stroke-width="1"/>
+                
+                <!-- Landing Gear (visible in landed state) -->
+                <line x1="20" y1="45" x2="15" y2="90" stroke="#666666" stroke-width="2"/>
+                <line x1="80" y1="45" x2="85" y2="90" stroke="#666666" stroke-width="2"/>
+                <line x1="45" y1="80" x2="45" y2="95" stroke="#666666" stroke-width="2"/>
+            </svg>
+        </div>                <!-- Minimal HUD Overlay -->
                 <div class="surface-hud" style="
                     position: absolute;
                     bottom: 20px;
@@ -2921,6 +3073,58 @@
                         opacity: 0.9;
                     `;
                     terrainContainer.appendChild(ice);
+                }
+                break;
+                
+            case 'desert':
+                // Add sand dunes and spice fields
+                for (let i = 0; i < 8; i++) {
+                    const dune = document.createElement('div');
+                    dune.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${100 + Math.random() * 200}px;
+                        height: ${30 + Math.random() * 50}px;
+                        background: linear-gradient(135deg, #D2691E 0%, #8B4513 100%);
+                        border-radius: ${Math.random() * 40}% ${Math.random() * 40}% 0 0;
+                        opacity: 0.9;
+                    `;
+                    terrainContainer.appendChild(dune);
+                }
+                
+                // Add spice fields (glowing patches)
+                for (let i = 0; i < 5; i++) {
+                    const spiceField = document.createElement('div');
+                    spiceField.style.cssText = `
+                        position: absolute;
+                        bottom: ${Math.random() * 20}px;
+                        left: ${Math.random() * width}px;
+                        width: ${40 + Math.random() * 80}px;
+                        height: ${20 + Math.random() * 30}px;
+                        background: radial-gradient(circle, rgba(255, 140, 0, 0.6) 0%, rgba(139, 69, 19, 0.3) 70%);
+                        border-radius: 50%;
+                        filter: blur(3px);
+                        animation: glow 2s ease-in-out infinite alternate;
+                    `;
+                    terrainContainer.appendChild(spiceField);
+                }
+                
+                // Add occasional sandworm signs
+                if (Math.random() < 0.3) { // 30% chance to show wormsign
+                    const wormsign = document.createElement('div');
+                    wormsign.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: ${Math.random() * width}px;
+                        width: ${200 + Math.random() * 300}px;
+                        height: 20px;
+                        background: rgba(139, 69, 19, 0.4);
+                        border-radius: 50%;
+                        transform: scaleX(${0.5 + Math.random()});
+                        animation: wormsign 4s ease-in-out infinite;
+                    `;
+                    terrainContainer.appendChild(wormsign);
                 }
                 break;
         }
@@ -3994,30 +4198,46 @@ function checkAsteroidCollision() {
 // ...existing code...
 
     function gameLoop() {
-        gameState.time++; // Increment game time for animations
-        
-        // NEW: Consume resources over time
-        consumeResources(0.016); // Assuming 60fps
-        
-        if (gameState.view === 'landing') {
-            updateLanderPhysics();
-            drawLanderMinigame();
-        } else if (gameState.view === 'map') {
-            updatePlanets();
-            handleSteering();
-            updateParticles(); // Update particle effects
+        try {
+            gameState.time++; // Increment game time for animations
             
-            updateAsteroids();
-            checkAsteroidCollision();
+            // Check if game is over
+            if (gameState.shipFuel <= 0 || 
+                Object.values(gameState.resources).some(r => r <= 0)) {
+                gameOver();
+                return;
+            }
             
-            drawMap();
-            checkBlackHoleCollision();
-            checkExitGateCollision();
-            checkLandingProximity();
-        } 
-        
-        updateHUD();
-        gameState.gameLoopId = requestAnimationFrame(gameLoop);
+            // NEW: Consume resources over time
+            consumeResources(0.016); // Assuming 60fps
+            
+            if (gameState.view === 'landing') {
+                updateLanderPhysics();
+                drawLanderMinigame();
+            } else if (gameState.view === 'map') {
+                updatePlanets();
+                handleSteering();
+                updateParticles(); // Update particle effects
+                
+                if (gameState.asteroids) {
+                    updateAsteroids();
+                    checkAsteroidCollision();
+                }
+                
+                drawMap();
+                checkBlackHoleCollision();
+                checkExitGateCollision();
+                checkLandingProximity();
+            } 
+            
+            updateHUD();
+            gameState.gameLoopId = requestAnimationFrame(gameLoop);
+        } catch (error) {
+            console.error('Game Loop Error:', error);
+            showNotification('⚠️ Error', 'An error occurred in the game loop', '#ff4444');
+            // Attempt to recover
+            initializeGame();
+        }
     }
 
     // --- INITIALIZATION ---
@@ -4029,18 +4249,152 @@ function checkAsteroidCollision() {
     resizeTimeout = setTimeout(resizeCanvas, 100);
     });
 // ...existing code...
-    // Start Game
-    initializeSystem(NORMAL_PLANETS, 'Earth Orbit');
-    initializeMissions();
-    initializeResources(); // NEW: Initialize resource system
-
-    gameLoop();
+    // API Functions
+    const API_URL = 'http://localhost:5000/api';
     
-    updateAsteroids();
-checkAsteroidCollision();
+    async function saveGameState() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch(`${API_URL}/saves`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({ gameState })
+            });
+            
+            if (response.ok) {
+                showNotification('💾 Game Saved', 'Progress saved successfully', '#00ff88');
+            }
+        } catch (error) {
+            console.error('Save error:', error);
+            showNotification('❌ Save Failed', 'Could not save game', '#ff4444');
+        }
+    }
+
+    async function loadGameState() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch(`${API_URL}/saves/latest`, {
+                headers: {
+                    'x-auth-token': token
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                Object.assign(gameState, data.gameState);
+                showNotification('🔄 Game Loaded', 'Progress restored', '#00ff88');
+                return true;
+            }
+        } catch (error) {
+            console.error('Load error:', error);
+            showNotification('❌ Load Failed', 'Could not load game', '#ff4444');
+        }
+        return false;
+    }
+
+    async function submitScore() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch(`${API_URL}/scores`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({
+                    score: gameState.score,
+                    achievements: gameState.achievements,
+                    planetVisits: Object.keys(SOLAR_SYSTEM).map(name => ({
+                        planetName: name,
+                        visitCount: 1 // You could track this in gameState
+                    }))
+                })
+            });
+            
+            if (response.ok) {
+                showNotification('🏆 Score Submitted', 'Your score has been recorded', '#00ff88');
+            }
+        } catch (error) {
+            console.error('Score submission error:', error);
+        }
+    }
+
+    // Start Game
+    async function initializeGame() {
+        // Try to load saved game
+        const loaded = await loadGameState();
+        
+        if (!loaded) {
+            // Start new game if no save exists
+            initializeSystem(NORMAL_PLANETS, 'Earth Orbit');
+            initializeMissions();
+            initializeResources();
+            gameState.stars = []; // Reset stars
+            gameState.particles = []; // Reset particles
+            gameState.asteroids = []; // Reset asteroids
+        }
+        
+        resizeCanvas(); // Ensure canvas is properly sized
+        gameLoop();
+
+        // Auto-save every 5 minutes
+        setInterval(saveGameState, 5 * 60 * 1000);
+    }
+
+    // Start the game
+    initializeGame();
 
 // In drawMap(), after drawParticles():
 //drawAsteroids();
+function gameOver() {
+    // Cancel the game loop
+    if (gameState.gameLoopId) {
+        cancelAnimationFrame(gameState.gameLoopId);
+        gameState.gameLoopId = null;
+    }
+
+    // Save final score to localStorage
+    const highScore = parseInt(localStorage.getItem('spaceGameHighScore') || '0');
+    if (gameState.score > highScore) {
+        localStorage.setItem('spaceGameHighScore', gameState.score.toString());
+    }
+
+    // Save final game state
+    localStorage.setItem('spaceGameLastScore', gameState.score.toString());
+
+  // Show "Quit Game" button
+  const quitBtn = document.createElement('button');
+  quitBtn.textContent = 'Quit Game';
+  quitBtn.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ff4444;
+    color: #fff;
+    font-size: 1.5rem;
+    padding: 20px 40px;
+    border-radius: 12px;
+    border: none;
+    z-index: 2000;
+    box-shadow: 0 0 20px #ff4444;
+  `;
+  quitBtn.onclick = () => {
+    window.location.reload(); // Or redirect to a main menu if you have one
+  };
+  document.body.appendChild(quitBtn);
+
+  showNotification('Game Over', 'You ran out of fuel! Click "Quit Game" to exit.', '#ff4444');
+}
 
 </script>
 </body>
